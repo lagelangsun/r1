@@ -1,6 +1,9 @@
 import numpy as np
 import sys
 
+
+#计算模块
+
 class CalculateFunc(object):
 
     
@@ -10,8 +13,8 @@ class CalculateFunc(object):
         return locRecord
     
     def calculateRobot(self, staffLoc):
-        #所处工作台 ID 携带物品类型 时间价值系数 碰撞价值系数 角速度 线速度 朝向 坐标x 坐标y
-        locRecord = [0, 0, 0, 0, 0, 0, 0, staffLoc[1]
+        #所处工作台ID 携带物品类型 时间价值系数 碰撞价值系数 角速度 线速度x 线速度y 朝向 坐标x 坐标y
+        locRecord = [0, 0, 0, 0, 0, 0, 0, 0, staffLoc[1]
                     * 0.5 + 0.25, staffLoc[0] * 0.5 + 0.25]
         return locRecord
     
