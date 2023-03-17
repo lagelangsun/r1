@@ -1,0 +1,8 @@
+1140
+forward 0 4.5
+rotate 0 3.14159
+forward 2 5
+forward 3 -5
+sell 1
+buy 1
+OK
