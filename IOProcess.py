@@ -2,6 +2,7 @@ import sys
 import numpy as np
 from A_property import Property
 from A_pre_calculate import CalculateFunc
+
 from Utils import Utils
 from Robot import Robot
 
@@ -54,7 +55,7 @@ class IOProcess(object):
                         at_machine = self.robot_state_list[i][0]
                         take_obj = self.robot_state_list[i][1]
                         if (take_obj == 0):
-                            # 没带东西
+                            # 没带东西,找最近的
                             pass
                         else:
                             for machine in self.receive_state_dict[take_obj]:
@@ -114,26 +115,15 @@ class IOProcess(object):
         for index_row, line in enumerate(server_info_machine):  # 工位信息行
             data_line = list(map(float, line.strip("\n").split()))  # str转int 这里面从txt读的穿捡来的data_line全是文本，不知道到时候服务器传进来的是整数还是文本
             
-            
-
             machine_type = data_line[0]  # 型号
-            
-            # 找到型号key:machineType对应的list[[x1,y1,0,0,0],[x2,y2,0,0,0],[x3,y3,0,0,0]....]
-            machine_type_list = self.machine_state_dict[machine_type]
-            
-            for i in range(len(machine_type_list)):             # 获取该型号机器人的个数，遍历该型号的list，找到对应的机器人
-                if (data_line[1] == machine_type_list[i][0]):   # x坐标一样，所以这里要int()一下
-                    if (data_line[2] == machine_type_list[i][1]):  # y坐标一样
-                        # 对应的型号machinetype的机器人i更新
-                        machine_type_list[i] = [
-                            data_line[1], data_line[2], data_line[3], data_line[4], data_line[5]]
-                        # 对应的型号machinetype更新
-                        self.machine_state_dict[machine_type] = machine_type_list
-                        break
-                    else:
-                        continue
-                else:
-                    continue
+
+            #找到key型号对应的value list,更改这个list可以直接更改dictkey对应的list，dict是对象传递
+            machine_type_list = self.machine_state_dict[machine_type] 
+
+            for machine_type_list_class in machine_type_list: #遍历key[machine_type]对应的list，找到与行相对应的id ,每个id对应的行号都是固定的
+                if machine_type_list_class.id == index_row:
+                    machine_type_list_class.update(data_line[1:6])  #更新
+                    break
 
 
     def infoUpdateRobotList(self, server_info_robot):
@@ -152,23 +142,23 @@ class IOProcess(object):
             for index_cal, map_char in enumerate(data_line[0]):
                 if (map_char != '.'):
                     if (map_char == 'A'):
-                        # self.robot_state_list.append(
-                        #     self.preCalculate.calculateRobot([100-index_row, index_cal]))
-                        self.robot_state_list.append(Robot(data_line[0], data_line[1], data_line[2], data_line[3], data_line[4])
+                        self.robot_state_list.append(
+                            Robot(self.preCalculate.calculateLoc([99-index_row, index_cal]))
+                        ) #Robot(x,y)
                     else:
                         self.mapUpdateDict(
-                            int(map_char), self.machine_state_dict, index_row, index_cal)  # 更新字典
+                            int(map_char), index_row, index_cal)  # 更新字典
         self.mapFinalUpdateDict()
 
         self.server_info = []
 
     def mapUpdateDict(self, machine_type, machine_state_dict, index_row, index_cal): #初始化数据结构step2
 
-        Loc = machine_state_dict[machine_type]
-        loc_with_index = self.preCalculate.calculateMap(
-            [99-index_row, index_cal])
-        Loc.append(loc_with_index)
-        machine_state_dict[machine_type] = Loc
+        robot_loc = self.machine_state_dict[machine_type] #找到key[machine_type]对应的list: [class1,class2,....]
+        robot_loc.append(  
+                        Machine(machine_type,self.preCalculate.calculateLoc([99-index_row, index_cal])) #Machine(type,x,y)
+                    )
+        self.machine_state_dict[machine_type] = robot_loc
 
     def mapFinalUpdateDict(self):  # 去除地图中没出现的型号的Machine，初始化数据结构step3
         for i in range(9):
