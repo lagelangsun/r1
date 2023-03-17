@@ -2,7 +2,8 @@ import sys
 import numpy as np
 from A_property import Property
 from A_pre_calculate import CalculateFunc
-
+from Utils import Utils
+from Robot import Robot
 
 class IOProcess(object):
     def __init__(self):
@@ -12,30 +13,55 @@ class IOProcess(object):
 
         self.preCalculate = CalculateFunc()  #计算模块
         self.robot_state_list = []         # 机器人list
+        self.machine_list = [] # 工作台list
         self.machine_state_dict = {1: [], 2: [], 3: [], 4: [],  # {key:工作台类型(int),value:[坐标(x,y),剩余生产时间（帧数）,原材料格状态,产品格状态]}
                                    5: [], 6: [], 7: [], 8: [], 9: []}  # 工作台按型号list
-
+        self.receive_state_dict = {1: [], 2: [], 3: [], 4: [],  # {key:物品类型(int),value:[坐标(x,y),剩余生产时间（帧数）,原材料格状态,产品格状态]}
+                                   5: [], 6: [], 7: []}  # 能接受该物品类型的工作台list
         # self.sale_count = []
         # self.buy_count = []
         # self.forward_count = []
         # self.rotate_Count = []
 
         self.frame_id = 1       #帧数
-        self.current_money = 1  #钱
+        self.current_money = 200000  #钱
         self.k = 0  #机器数量
         
         # self.control = Controlclass() #
         
+    # # def initialize(self):
+    # #     # 初始化
+
+    # def start(self):
+
     def getInfoFromServer(self):
         try:
+            # util = Utils()
+            i = 1
             while True:
                 input_str = ' '
                 while input_str != 'OK':  # 读到OK跳出循环
                     input_str = input()
                     self.server_info.append(input_str)
                 self.server_info.pop(-1)  # 删掉OK
+                sys.stderr.write(self.server_info+'\n')
                 if (self.start_flag):  # 如果不是开始
                     self.getInfo(self.server_info)  # 更新工位和小车信息
+                    # sys.stderr.write(str(self.robot_state_list))
+                    # sys.stderr.write(str(self.machine_state_dict))
+                    for i in range(len(self.robot_state_list)):
+                        robot = self.robot_state_list(i)
+                        at_machine = self.robot_state_list[i][0]
+                        take_obj = self.robot_state_list[i][1]
+                        if (take_obj == 0):
+                            # 没带东西
+                            pass
+                        else:
+                            for machine in self.receive_state_dict[take_obj]:
+                                if machine.receive(take_obj):
+                                    robot.move(machine) # 到这个machine这里去
+
+
                     # sys.stderr.write(str(self.frame_id))
 
                     # **************************************************
@@ -51,7 +77,8 @@ class IOProcess(object):
 
 
                     # self.outputInfo(xxx,xxx,......)
-                    self.finishTest()
+
+                    self.finish()
                 else:
                     self.getMap(self.server_info)  # 如果是开始就读地图信息
                     self.finish()
@@ -87,6 +114,8 @@ class IOProcess(object):
         for index_row, line in enumerate(server_info_machine):  # 工位信息行
             data_line = list(map(float, line.strip("\n").split()))  # str转int 这里面从txt读的穿捡来的data_line全是文本，不知道到时候服务器传进来的是整数还是文本
             
+            
+
             machine_type = data_line[0]  # 型号
             
             # 找到型号key:machineType对应的list[[x1,y1,0,0,0],[x2,y2,0,0,0],[x3,y3,0,0,0]....]
@@ -106,6 +135,7 @@ class IOProcess(object):
                 else:
                     continue
 
+
     def infoUpdateRobotList(self, server_info_robot):
 
         for index_row, line in enumerate(server_info_robot):  # 机器人信息行
@@ -122,8 +152,9 @@ class IOProcess(object):
             for index_cal, map_char in enumerate(data_line[0]):
                 if (map_char != '.'):
                     if (map_char == 'A'):
-                        self.robot_state_list.append(
-                            self.preCalculate.calculateRobot([100-index_row, index_cal]))
+                        # self.robot_state_list.append(
+                        #     self.preCalculate.calculateRobot([100-index_row, index_cal]))
+                        self.robot_state_list.append(Robot(data_line[0], data_line[1], data_line[2], data_line[3], data_line[4])
                     else:
                         self.mapUpdateDict(
                             int(map_char), self.machine_state_dict, index_row, index_cal)  # 更新字典
@@ -148,10 +179,12 @@ class IOProcess(object):
         sys.stdout.write('OK\n')
         sys.stdout.flush()
 
-    def finishTest(self):
-        sys.stdout.write('%d\n' % int(self.frame_id))
-        line_speed, angle_speed = 3, 1.5
-        for robot_id in range(4):
-            sys.stdout.write('forward %d %d\n' % (robot_id, line_speed))
-            sys.stdout.write('rotate %d %f\n' % (robot_id, angle_speed))
-        self.finish()
+
+
+    # def finishTest(self):
+    #     sys.stdout.write('%d\n' % int(self.frame_id))
+    #     line_speed, angle_speed = 3, 1.5
+    #     for robot_id in range(4):
+    #         sys.stdout.write('forward %d %d\n' % (robot_id, line_speed))
+    #         sys.stdout.write('rotate %d %f\n' % (robot_id, angle_speed))
+    #     self.finish()

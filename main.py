@@ -28,10 +28,10 @@ if __name__ == '__main__':
         if not line:
             break
         parts = line.split(' ')
-O        frame_id = int(parts[0])
+        frame_id = int(parts[0])
         # time.sleep(0.05)
         read_util_ok()
-        sys.stderr.write(frame_id)
+        # sys.stderr.write(frame_id)
 
         sys.stdout.write('%d\n' % frame_id)
         line_speed, angle_speed = 3, 1.5
