@@ -37,6 +37,7 @@ class IOProcess(object):
                 self.server_info.pop(-1)  # 删掉OK
                 if (self.start_flag):  # 如果不是开始
                     self.getInfo(self.server_info)  # 更新工位和小车信息
+                    sys.stderr.write('1 \n')
                     # sys.stderr.write(str(self.frame_id))
 
                     # **************************************************

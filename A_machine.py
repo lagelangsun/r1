@@ -3,15 +3,15 @@ import numpy as np
 class Machine(object):
     _ID = 0
     # 工作台类
-    def __init__(self, type, x, y):
+    def __init__(self, type, loc_list):
 
         #坐标(x,y),剩余生产时间（帧数）,原材料格状态(二进制,哪位为1代表哪位原材料格有东西),产品格状态
 
         self.id = self._ID
         self.__class__._ID += 1
         self.type = type
-        self.x = x # 横坐标
-        self.y = y # 纵坐标
+        self.x = loc_list[0] # 横坐标
+        self.y = loc_list[1] # 纵坐标
         self.remain_frame = 0    # 剩余生产时间
         self.raw_status = 0         # 原材料格状态
         self.product_status = 0 # 产品格状态

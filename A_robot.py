@@ -4,7 +4,7 @@ import sys
 class Robot(object):
     # 机器人类\
     _ID = 0
-    def __init__(self, x, y):
+    def __init__(self, loc_list):
 
         #[所处工作台ID 携带物品类型 时间价值系数 碰撞价值系数 角速度 线速度x 线速度y 朝向 坐标x 坐标y]
 
@@ -19,8 +19,8 @@ class Robot(object):
         self.linear_v_x = 0 #线速度x
         self.linear_v_y = 0 #线速度y
         self.orientation = 0 # 朝向
-        self.x = x # 横坐标
-        self.y = y # 纵坐标
+        self.x = loc_list[0] # 横坐标
+        self.y = loc_list[1] # 纵坐标
 
 
     def calRotateAngle(self, machine):
