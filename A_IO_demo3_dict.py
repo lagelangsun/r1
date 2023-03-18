@@ -72,7 +72,7 @@ class IOProcess(object):
                             # sys.stderr.write('machine_type_xxxxxxxxxxxxxxxxxxxxxxxxxxx' + str(machine.id))
                         # sys.stderr.write('machine_type_xxxxxxxxxxxxxxxxxxxxxxxxxxx' + str(at_machine_type))
                         if self.frame_id <= 50:
-                            # 找最近的123
+                            # 前50帧所有物品都没有生产好，找最近的123号工作台并移动过去
                             if at_machine_type in [1, 2, 3]:
                                 robot.move(at_machine)
                                 robot.moving = True
@@ -137,10 +137,11 @@ class IOProcess(object):
                                         robot.moving = True
                                 else:
                                     # 如果机器人不位于任何工作台，寻找最近的能卖出的
-                                    buyer_list = []
+                                    buyer_list = [] # 有空间购买该物品的工作台list
                                     for machine in self.machine_sort_by_receive[take_obj]:
                                         # sys.stderr.write(str(machine.type)+'   '+str(machine.raw_status) + str(machine.receive(take_obj))+'\n')
                                         if machine.receive(take_obj):
+                                            # 如果该工作台可以购买该物品，维护进list
                                             buyer_list.append(machine)
                                     # for id in receive_id_list:
                                     #     # sys.stderr.write('id'+str(id)+'\n')
@@ -152,6 +153,7 @@ class IOProcess(object):
                                     # # for buyer in buyer_list:
                                     #     # sys.stderr.write('buyer'+str(buyer.type) + '\n')
                                     if not robot.moving:
+                                        # 寻找上面的list中最近的工作台
                                         buyer = robot.find_nearest_machine(buyer_list)
                                     sys.stderr.write('buyer'+str(buyer.type) + '\n')
                                     robot.move(buyer)
