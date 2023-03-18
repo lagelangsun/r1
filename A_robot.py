@@ -21,6 +21,7 @@ class Robot(object):
         self.orientation = 0 # 朝向
         self.x = loc_list[0] # 横坐标
         self.y = loc_list[1] # 纵坐标
+        self.moving = False # 正在移动
 
 
     def calDistance(self, machine):
@@ -54,41 +55,53 @@ class Robot(object):
         # 在machine_list中寻找最近的machine
         nearest_distance = 10000
         nearest_machine = None
-        
+        # sys.stderr.write('machine_list'+str(machine_list) + '\n')
+        # for machine in machine_list:
+        #     sys.stderr.write('machine_type '+ str(machine.type) + '\n')
         if machine_list != []:
             for machine in machine_list:
-                # sys.stderr.write(str(machine.product_status) + '\n')
-                if machine.product_status == 1:
-                    distance = self.calDistance(machine)
-                    
-                    if distance < nearest_distance:
-                        nearest_machine = machine
-                        nearest_distance
-        if nearest_machine != None:                    
-            nearest_machine.product_status = 0
-        return nearest_machine
-    
-    def find_nearest_machine1(self, machine_list):
-        # 在machine_list中寻找最近的machine
-        nearest_distance = 10000
-        nearest_machine = None
-        
-        if machine_list != []:
-            for machine in machine_list:
+                sys.stderr.write('status_type'+str(machine.product_status) + '\n')
+                # if int(machine.product_status) == 1:
                 distance = self.calDistance(machine)
+                sys.stderr.write('distance'+str(distance) + '\n')
+                # sys.stderr.write('nearest_machine'+str(nearest_distance) + '\n')
                 if distance < nearest_distance:
                     nearest_machine = machine
-                    nearest_distance
+                    nearest_distance = distance
+                    # sys.stderr.write('nearest_machine'+str(nearest_machine) + '\n')
         # if nearest_machine != None:                    
         #     nearest_machine.product_status = 0
+        # sys.stderr.write('nearest_machine'+str(nearest_machine) + '\n')            
         return nearest_machine
+    
+    # def find_nearest_machine1(self, machine_list):
+    #     # 在machine_list中寻找最近的machine
+    #     nearest_distance = 10000
+    #     nearest_machine = None
+        
+    #     if machine_list != []:
+    #         for machine in machine_list:
+    #             distance = self.calDistance(machine)
+    #             # sys.stderr.write('distance'+str(distance) + '\n')
+    #             # sys.stderr.write('nearest_distance'+str(nearest_distance) + '\n')
+    #             if distance < nearest_distance:
+    #                 nearest_machine = machine
+    #                 nearest_distance = distance
+    #     # if nearest_machine != None:                    
+    #     #     nearest_machine.product_status = 0
+    #     # sys.stderr.write('final_nearest_machine'+str(nearest_machine.type) + '\n')
+    #     return nearest_machine
     
     def move(self, machine):
         distance = self.calDistance(machine)
+        sys.stderr.write('move distance'+str(distance)+'\n')
         rotate_angle = self.calRotateAngle(machine)
+        sys.stderr.write('move rotate_angle'+str(rotate_angle)+'\n')
         if (abs(rotate_angle) > 3.6):
             self.rotate(np.pi*(rotate_angle/abs(rotate_angle)))
+            sys.stderr.write('move rotate  angle command '+str(rotate_angle)+'\n')
         else:
+            # sys.stderr.write('ininin'+'\n')
             self.rotate(0)
 
         if (distance > 0.4):
