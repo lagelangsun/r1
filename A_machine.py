@@ -1,4 +1,7 @@
 import numpy as np
+import sys
+
+MACHINE_RECEIVE_OBJECT_LIST = {4: [1, 2], 5: [1, 3], 6: [2, 3], 7: [4, 5, 6], 8: [7], 9:[1, 2, 3, 4, 5, 6, 7]}
 
 class Machine(object):
     _ID = 0
@@ -16,12 +19,12 @@ class Machine(object):
         self.remain_frame = 0    # 剩余生产时间
         self.raw_status = 0         # 原材料格状态
         self.product_status = 0 # 产品格状态
-        # self.receive_type_list = receive_type_list
+        # self.receive_list = MACHINE_RECEIVE_OBJECT_LIST
 
     def receive(self, product_id):
         # 判断是否能接受该产品
         # 转成二进制，然后移位，判断最后一位是不是1
-        if (bin(self.raw_status>>product_id)[-1] == 1):
+        if bin(int(self.raw_status)>>int(product_id)) == int(1):
             return False
         else:
             return True
@@ -32,3 +35,7 @@ class Machine(object):
         self.remain_frame = data_line[2]    # 剩余生产时间
         self.raw_status = data_line[3]         # 原材料格状态
         self.product_status = data_line[4] # 产品格状态
+    #     self.receive_list = self.update_receive_list(self.raw_status)
+
+    # def update_receive_list(self, product_status):
+

@@ -6,6 +6,9 @@ from A_machine import Machine
 from A_robot import Robot
 
 
+RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],  
+                           5: [7, 9], 6: [7, 9], 7: [8, 9]}
+
 class IOProcess(object):
     def __init__(self):
 
@@ -44,7 +47,57 @@ class IOProcess(object):
                 self.server_info.pop(-1)  # 删掉OK
                 if (self.start_flag):  # 如果不是开始
                     self.getInfo(self.server_info)  # 更新工位和小车信息
-                    sys.stderr.write('1 \n')
+                    sys.stdout.write('%d\n' % (self.frame_id))
+                    # for i in range(len(self.robot_state_list)):
+                    for i in range(1):
+                        # robot = self.robot_state_list[i]
+                        robot = self.robot_state_list[0]
+                        if self.frame_id <= 50:
+                            # 找最近的123
+                            machine_list = []
+                            for i in range(1, 4):
+                                for machine in self.machine_state_dict[i]:
+                                    machine_list.append(machine)
+                            # sys.stderr.write(str(machine_list))  
+                            # for machine in machine_list:
+                            #     sys.stderr.write(str(machine.type))     
+                            nearest_machine = robot.find_nearest_machine1(machine_list)
+                            # sys.stderr.write('nearest_machine:'+str(nearest_machine.type)) 
+                            if robot.calDistance(nearest_machine) < 0.4:
+                                robot.buy()
+                            else:
+                                robot.move(nearest_machine)
+                            
+                        else:
+
+                            at_machine = robot.atmachine_id
+                            take_obj = self.robot_state_list[i].take_obj
+                            
+                            if take_obj == 0:
+                                if at_machine != -1:
+                                    robot.buy()
+                                nearest_machine = robot.find_most_valuable_machine(self.machine_state_dict)
+                                # sys.stderr.write(str(nearest_machine))
+                                robot.move(nearest_machine)
+                            else:
+                                receive_id_list = RECEIVE_MACHINE_ID_LIST[take_obj]
+                                # 寻找能够收购携带物品的最近的工作台
+                                if at_machine in receive_id_list:
+                                    # 如果机器人位于工作台4、5、9附近，立即卖出
+                                    robot.sell()
+                                else:
+                                    # 如果机器人不位于任何工作台，寻找最近的能卖出的
+                                    buyer_list = []
+                                    for id in receive_id_list:
+                                        sys.stderr.write('id'+str(id)+'\n')
+                                        for machine in self.machine_state_dict[id]:
+                                            # if take_obj in machine.receive_list:
+                                            #     buyer_list.append(machine)
+                                            
+                                            if machine.receive(take_obj):
+                                                buyer_list.append(machine)
+                                    buyer = robot.find_nearest_machine(buyer_list)
+                                    robot.move(nearest_machine)
                     # sys.stderr.write(str(self.frame_id))
 
                     # **************************************************
@@ -59,9 +112,12 @@ class IOProcess(object):
                     # **************************************************
 
                     # self.outputInfo(xxx,xxx,......)
-                    self.finishTest()
+                    self.finish()
                 else:
                     self.getMap(self.server_info)  # 如果是开始就读地图信息
+                    # for i in range(1, 8):
+                    #     for machine in self.machine_sort_by_receive[i]:
+                    #         sys.stderr.write(str(machine.type)+'\n')
                     self.finish()
 
         except EOFError:  # 时间到
@@ -98,8 +154,8 @@ class IOProcess(object):
             machine_type = data_line[0]  # 型号
 
             self.infoUpdateMachineStateDict(machine_type, index_row, data_line)
-            self.infoUpdateMachineSortByRecive(
-                machine_type, index_row, data_line)
+            # self.infoUpdateMachineSortByRecive(
+            #     machine_type, index_row, data_line)
 
     # 更新machine_state_dict
     def infoUpdateMachineStateDict(self, machine_type, index_row, data_line):
@@ -134,7 +190,6 @@ class IOProcess(object):
     # ************************************初始化数据结构*****************************************
 
     def getMap(self, content):  # 初始化数据结构step1
-
         self.start_flag = True
 
         for index_row, line in enumerate(content):
@@ -149,7 +204,35 @@ class IOProcess(object):
                     else:
                         self.mapUpdateDict(
                             int(map_char), index_row, index_cal)  # 更新字典
-        self.mapFinalUpdateDict()
+                        
+        for type in range(4, 10):
+            machine_list = self.machine_state_dict[type]
+            for machine in machine_list:
+                if machine.type == 4:
+                    self.machine_sort_by_receive[1].append(machine)
+                    self.machine_sort_by_receive[2].append(machine)
+                elif machine.type == 5:
+                    self.machine_sort_by_receive[1].append(machine)
+                    self.machine_sort_by_receive[3].append(machine)
+                elif machine.type == 6:
+                    self.machine_sort_by_receive[2].append(machine)
+                    self.machine_sort_by_receive[3].append(machine)
+                elif machine.type == 7:
+                    self.machine_sort_by_receive[4].append(machine)
+                    self.machine_sort_by_receive[5].append(machine)
+                    self.machine_sort_by_receive[6].append(machine)
+                elif machine.type == 8:
+                    self.machine_sort_by_receive[7].append(machine)
+                elif machine.type == 9:
+                    self.machine_sort_by_receive[1].append(machine)
+                    self.machine_sort_by_receive[2].append(machine)
+                    self.machine_sort_by_receive[3].append(machine)
+                    self.machine_sort_by_receive[4].append(machine)
+                    self.machine_sort_by_receive[5].append(machine)
+                    self.machine_sort_by_receive[6].append(machine)
+                    self.machine_sort_by_receive[7].append(machine)
+
+        # self.mapFinalUpdateDict()
 
         self.server_info = []
 
@@ -157,14 +240,18 @@ class IOProcess(object):
 
         # 找到key[machine_type]对应的list: [class1,class2,....]
         machine_loc = self.machine_state_dict[machine_type]
+        
         machine_loc.append(
             Machine(machine_type, self.preCalculate.calculateLoc([99-index_row, index_cal])
                     # ,self.preCalculate.judgeReceiveType(machine_type)  #传入machine_type对应的receive_type ,一个list
                     )  # Machine(type,x,y)
         )
+        
+
         # machine_loc[-1]:刚添加的Machine Class，遍历对应表看接收哪几种原料
-        for receive_type in self.receivetype_for_machinetype[machine_type]:
-            self.machine_sort_by_receive[receive_type].append(machine_loc[-1])
+        # for receive_type in self.receivetype_for_machinetype[machine_type]:
+        #     self.machine_sort_by_receive[receive_type].append(machine_loc[-1])
+        #     sys.stderr.write(str(machine_loc[-1])+'\n')
 
     def mapFinalUpdateDict(self):  # 去除地图中没出现的型号的Machine，初始化数据结构step3
         for i in range(9):
