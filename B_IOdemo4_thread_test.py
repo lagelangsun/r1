@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import threading
 from A_property import Property
 from A_pre_calculate import CalculateFunc
 from A_machine import Machine
@@ -9,6 +10,7 @@ from A_robot import Robot
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],
                            5: [7, 9], 6: [7, 9], 7: [8, 9]}
 
+RECEIVE_DATA_FINISH_FLAG = False  # 接受数据结束标志位
 
 class IOProcess(object):
     def __init__(self):
@@ -17,15 +19,17 @@ class IOProcess(object):
         self.server_info = []    # 存储接受信息
 
         self.preCalculate = CalculateFunc()                             # 计算模块
+
         self.robot_state_list = []                                      # 机器人list
         self.machine_state_dict = {1: [], 2: [], 3: [], 4: [],          # {key:工作台类型(int),value:[坐标(x,y),剩余生产时间（帧数）,原材料格状态,产品格状态]}
                                    5: [], 6: [], 7: [], 8: [], 9: []}   # 工作台按型号list
         self.machine_sort_by_receive = {1: [], 2: [], 3: [], 4: [],     # 按接收原料种类
                                         5: [], 6: [], 7: []}
-
         self.receivetype_for_machinetype = {4: [1, 2], 5: [1, 3], 6: [2, 3]  # switch case
                                             , 7: [4, 5, 6], 8: [7], 9: [1, 2, 3, 4, 5, 6, 7]}
-        self.machine_index_to_type_list = []
+        self.machine_index_to_type_list = []    # 按工作台id排序的list
+
+        self.thread_for_robot = [] # 多线程
 
         # self.sale_count = []
         # self.buy_count = []
@@ -34,7 +38,7 @@ class IOProcess(object):
 
         self.frame_id = 1  # 帧数
         self.current_money = 1  # 钱
-        self.k = 0  # 机器数量
+        self.k = 0  # 工作台数量
 
         # self.control = Controlclass() #
 
@@ -54,136 +58,28 @@ class IOProcess(object):
                 # ***************************调用控制模块*****************************************
                 if (self.start_flag):  # 如果不是开始
 
-                    self.getInfo(self.server_info)  # 更新工位和小车信息
-
-                    sys.stdout.write('%d\n' % (self.frame_id))
-                    # self.flag = self.flag + 1 #判断是否跳帧
-                    # sys.stderr.write('flag %d\n' % (self.flag))
-                    # sys.stderr.write('frame_id %d\n' % (self.frame_id))
-                    # for i in range(len(self.robot_state_list)):
-                    for i in range(1):
-                        # robot = self.robot_state_list[i]
-                        robot = self.robot_state_list[0]
-                        # sys.stderr.write('serverinfo'str(machine_list))
-                        # 机器人携带的物品
-                        take_obj = self.robot_state_list[i].take_obj
-                        # at_machine = [x for x in self.machine_state_dict if x.idx == 3]
-                        if int(robot.atmachine_id) == -1:
-                            at_machine_type = -1
-                        else:
-                            at_machine = self.machine_index_to_type_list[int(
-                                robot.atmachine_id)]
-                            at_machine_type = at_machine.type
-                        # for machine in self.machine_index_to_type_list:
-                            # sys.stderr.write('machine_type_xxxxxxxxxxxxxxxxxxxxxxxxxxx' + str(machine.id))
-                        # sys.stderr.write('machine_type_xxxxxxxxxxxxxxxxxxxxxxxxxxx' + str(at_machine_type))
-                        if self.frame_id <= 50:
-                            # 前50帧所有物品都没有生产好，找最近的123号工作台并移动过去
-                            if at_machine_type in [1, 2, 3]:
-                                robot.move(at_machine)
-                                robot.moving = True
-
-                            machine_list = []
-                            for i in range(1, 4):
-                                for machine in self.machine_state_dict[i]:
-                                    machine_list.append(machine)
-                            # sys.stderr.write(str(machine_list))
-                            # for machine in machine_list:
-                            #     sys.stderr.write(str(machine.type))
-                            # sys.stderr.write('\n')
-                            if not robot.moving:
-                                nearest_machine = robot.find_nearest_machine(
-                                    machine_list)
-                                nearest_machine.product_status = 0
-                            sys.stderr.write(
-                                'nearest_machine is '+str(nearest_machine.type) + '\n')
-                            # sys.stderr.write('nearest_machine:'+str(nearest_machine.type))
-                            # if robot.calDistance(nearest_machine) < 0.4:
-                            #     robot.buy()
-                            # else:
-                            sys.stderr.write(
-                                'nearest_machine x is '+str(nearest_machine.x) + '\n')
-                            sys.stderr.write(
-                                'nearest_machine y is '+str(nearest_machine.y) + '\n')
-                            robot.move(nearest_machine)
-                            robot.moving = True
-
-                        else:
-
-                            # at_machine = robot.atmachine_id
-                            # at_machine = self.machine_index_to_type_list[int(robot.atmachine_id)]
-                            # at_machine_type = at_machine.type # 机器人所处工作台type
-                            # sys.stderr.write('at_machine '+str(at_machine) + '\n')
-
-                            if take_obj == 0:
-                                if at_machine_type != -1:
-                                    # 如果机器人处在某个工作台，直接尝试买
-                                    if int(at_machine.product_status) == 1:
-                                        robot.buy()
-                                        robot.moving = False
-                                    else:
-                                        robot.move(at_machine)
-                                        robot.moving = True
-                                else:
-                                    # 如果机器人不在某个工作台，寻找价值最大的工作台
-                                    if not robot.moving:
-                                        # 如果机器人没有目标，寻找价值最大的物品去购买
-                                        # sys.stderr.write('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'+str(nearest_machine.type) + '\n')
-                                        nearest_machine = robot.find_most_valuable_machine(
-                                            self.machine_state_dict)
-                                        nearest_machine.product_status = 0
-                                    sys.stderr.write(
-                                        'nearest_machine'+str(nearest_machine.type) + '\n')
-                                    robot.move(nearest_machine)  # 移动至目标工作台
-                                    robot.moving = True
-                            else:
-                                receive_id_list = RECEIVE_MACHINE_ID_LIST[take_obj]
-                                # 寻找能够收购携带物品的最近的工作台
-                                if at_machine_type in receive_id_list:
-                                    # 如果机器人位于能够卖出的工作台附近，立即卖出
-                                    if at_machine.receive(take_obj):
-                                        robot.sell()
-                                        robot.moving = False
-                                    else:
-                                        robot.move(at_machine)
-                                        robot.moving = True
-                                else:
-                                    # 如果机器人不位于任何工作台，寻找最近的能卖出的
-                                    buyer_list = []  # 有空间购买该物品的工作台list
-                                    for machine in self.machine_sort_by_receive[take_obj]:
-                                        # sys.stderr.write(str(machine.type)+'   '+str(machine.raw_status) + str(machine.receive(take_obj))+'\n')
-                                        if machine.receive(take_obj):
-                                            # 如果该工作台可以购买该物品，维护进list
-                                            buyer_list.append(machine)
-                                    # for id in receive_id_list:
-                                    #     # sys.stderr.write('id'+str(id)+'\n')
-                                    #     for machine in self.machine_state_dict[id]:
-                                    #         # if take_obj in machine.receive_list:
-                                    #         #     buyer_list.append(machine)
-                                    #         if machine.receive(take_obj):
-                                    #             buyer_list.append(machine)
-                                    # # for buyer in buyer_list:
-                                    #     # sys.stderr.write('buyer'+str(buyer.type) + '\n')
-                                    if not robot.moving:
-                                        # 寻找上面的list中最近的工作台
-                                        buyer = robot.find_nearest_machine(
-                                            buyer_list)
-                                    sys.stderr.write(
-                                        'buyer'+str(buyer.type) + '\n')
-                                    robot.move(buyer)
-                                    robot.moving = True
-
-                    ############################lhf##############################
-
-                    # **************************************************
+                    self.getInfo(self.server_info)  # 更新工作台和小车信息
 
                     # IO demo_3的数据结构：
-                    # self.robot_state_list(type:list):  [[xxx ,xxx ,xxx ,.....],[....]*3] [所处工作台ID 携带物品类型 时间价值系数 碰撞价值系数 角速度 线速度x 线速度y 朝向 坐标x 坐标y]
-                    # self.machine_state_dict(type:dictionary): {key:工作台类型(int),value:[[type1_1] ,[type2_2],...]}  [typex_x]:[坐标(x,y),剩余生产时间（帧数）,原材料格状态(二进制,哪位为1代表哪位原材料格有东西),产品格状态]
+                    # self.robot_state_list(type:list):  [Robot_class1,Robot_class2,Robot_class3,Robot_class4] 
+                    # self.machine_state_dict(type:dictionary): {key:工作台类型(int),value:[Machine_class_x,.....]}
                     # 其他参数:   帧数:self.frame_id   当前的钱:self.current_money     工作台数量: self.k
 
+                    # ***************************控制模块开始执行*****************************************
+
+                    # 方案1：初始化的地图的时候创建4个Robot对应的线程，然后直接.start()
+                    # run()里面使用while true一直运行，if判断全局标志位，等待全局标志位置1进入执行control代码
+                    # global RECEIVE_DATA_FINISH_FLAG 
+                    # RECEIVE_DATA_FINISH_FLAG = True  # 更新完信息后置1
+
+                    # 方案2：
+                    # 每次到了这里重新实例化类，重新创建Robot对应的线程，然后.start()
+                    # 但是因为run()没有while，所以不会一直运行，run()执行完毕后线程会自动销毁，每次到这里需要重新分新的4个子线程
+                    # for i in range(4):
+                    #     RobotAction(参数1，参数2,...)
                     # **************************************************
 
+                    self.control()
                     # self.outputInfo(xxx,xxx,......)
                     self.finish()
 
@@ -326,6 +222,116 @@ class IOProcess(object):
             sys.stdout.write('rotate %d %f\n' % (robot_id, angle_speed))
         self.finish()
 
+
+    def control(self):
+
+        sys.stdout.write('%d\n' % (self.frame_id))
+        # self.flag = self.flag + 1 #判断是否跳帧
+
+        for i in range(1):
+            robot = self.robot_state_list[0]
+            # 机器人携带的物品
+            take_obj = self.robot_state_list[i].take_obj
+            if int(robot.atmachine_id) == -1:
+                at_machine_type = -1
+            else:
+                at_machine = self.machine_index_to_type_list[int(
+                    robot.atmachine_id)]
+                at_machine_type = at_machine.type
+            if self.frame_id <= 50:
+                # 前50帧所有物品都没有生产好，找最近的123号工作台并移动过去
+                if at_machine_type in [1, 2, 3]:
+                    robot.move(at_machine)
+                    robot.moving = True
+
+                machine_list = []
+                for i in range(1, 4):
+                    for machine in self.machine_state_dict[i]:
+                        machine_list.append(machine)
+                if not robot.moving:
+                    nearest_machine = robot.find_nearest_machine(
+                        machine_list)
+                    nearest_machine.product_status = 0
+                robot.move(nearest_machine)
+                robot.moving = True
+
+            else:
+
+                # at_machine = robot.atmachine_id
+                # at_machine = self.machine_index_to_type_list[int(robot.atmachine_id)]
+                # at_machine_type = at_machine.type # 机器人所处工作台type
+                # sys.stderr.write('at_machine '+str(at_machine) + '\n')
+
+                if take_obj == 0:
+                    if at_machine_type != -1:
+                        # 如果机器人处在某个工作台，直接尝试买
+                        if int(at_machine.product_status) == 1:
+                            robot.buy()
+                            robot.moving = False
+                        else:
+                            robot.move(at_machine)
+                            robot.moving = True
+                    else:
+                        # 如果机器人不在某个工作台，寻找价值最大的工作台
+                        if not robot.moving:
+                            # 如果机器人没有目标，寻找价值最大的物品去购买
+                            # sys.stderr.write('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'+str(nearest_machine.type) + '\n')
+                            nearest_machine = robot.find_most_valuable_machine(
+                                self.machine_state_dict)
+                            nearest_machine.product_status = 0
+                        robot.move(nearest_machine)  # 移动至目标工作台
+                        robot.moving = True
+                else:
+                    receive_id_list = RECEIVE_MACHINE_ID_LIST[take_obj]
+                    # 寻找能够收购携带物品的最近的工作台
+                    if at_machine_type in receive_id_list:
+                        # 如果机器人位于能够卖出的工作台附近，立即卖出
+                        if at_machine.receive(take_obj):
+                            robot.sell()
+                            robot.moving = False
+                        else:
+                            robot.move(at_machine)
+                            robot.moving = True
+                    else:
+                        # 如果机器人不位于任何工作台，寻找最近的能卖出的
+                        buyer_list = []  # 有空间购买该物品的工作台list
+                        for machine in self.machine_sort_by_receive[take_obj]:
+                            # sys.stderr.write(str(machine.type)+'   '+str(machine.raw_status) + str(machine.receive(take_obj))+'\n')
+                            if machine.receive(take_obj):
+                                # 如果该工作台可以购买该物品，维护进list
+                                buyer_list.append(machine)
+
+                        if not robot.moving:
+                            # 寻找上面的list中最近的工作台
+                            buyer = robot.find_nearest_machine(
+                                buyer_list)
+                        robot.move(buyer)
+                        robot.moving = True
+
+        ############################lhf##############################
+
     # def outputInfo(self):
     #     print()  # 帧ID
     #     print('forward', '')
+
+class RobotAction(threading.Thread):
+    def __init__(self, num, time_1,  *args, **kwargs): 
+        super(RobotAction, self).__init__(*args, **kwargs)
+
+        # 传control需要的所有参数,需要知道有哪些参数
+
+        self.num = num
+        self.time = time_1
+        print('thread', num, 'init')
+ 
+    #  把control放在这里
+    def run(self): # 覆写threading.thread里面的run()，线程启动后会自动执行
+        # 方案1：
+        # while True:
+        #     global RECEIVE_DATA_FINISH_FLAG
+        #     if RECEIVE_DATA_FINISH_FLAG:
+        #         control()
+
+        # 方案2:
+        # control()
+
