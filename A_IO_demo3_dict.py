@@ -12,7 +12,7 @@ RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],
 
 class IOProcess(object):
     def __init__(self):
-        # self.flag = 1 # 判断是否跳帧，测试用
+        # self.flag = 1 # 判断是否跳帧
         self.start_flag = False  # 开始标志
         self.server_info = []    # 存储接受信息
 
@@ -51,18 +51,17 @@ class IOProcess(object):
                 # sys.stderr.write('mapinfo' + str(self.machine_index_to_type_list) + '\n')
 
                 ############################lhf##############################
+                # ***************************调用控制模块*****************************************
                 if (self.start_flag):  # 如果不是开始
+
                     self.getInfo(self.server_info)  # 更新工位和小车信息
 
-                    # ******************************************* 控制模块 ********************************************
-
-                    # sys.stdout.write('%d\n' % (self.frame_id))
-                    # self.flag = self.flag + 1 # 判断是否跳帧，测试用
+                    sys.stdout.write('%d\n' % (self.frame_id))
+                    # self.flag = self.flag + 1 #判断是否跳帧
                     # sys.stderr.write('flag %d\n' % (self.flag))
                     # sys.stderr.write('frame_id %d\n' % (self.frame_id))
                     # for i in range(len(self.robot_state_list)):
-
-                    for i in range(1): # 遍历小车
+                    for i in range(1):
                         # robot = self.robot_state_list[i]
                         robot = self.robot_state_list[0]
                         # sys.stderr.write('serverinfo'str(machine_list))
@@ -176,12 +175,9 @@ class IOProcess(object):
 
                     ############################lhf##############################
 
-                    # sys.stderr.write(str(self.frame_id))
-
                     # **************************************************
 
-                   
-                    # IO demo_1的数据结构：
+                    # IO demo_3的数据结构：
                     # self.robot_state_list(type:list):  [[xxx ,xxx ,xxx ,.....],[....]*3] [所处工作台ID 携带物品类型 时间价值系数 碰撞价值系数 角速度 线速度x 线速度y 朝向 坐标x 坐标y]
                     # self.machine_state_dict(type:dictionary): {key:工作台类型(int),value:[[type1_1] ,[type2_2],...]}  [typex_x]:[坐标(x,y),剩余生产时间（帧数）,原材料格状态(二进制,哪位为1代表哪位原材料格有东西),产品格状态]
                     # 其他参数:   帧数:self.frame_id   当前的钱:self.current_money     工作台数量: self.k
@@ -189,9 +185,8 @@ class IOProcess(object):
                     # **************************************************
 
                     # self.outputInfo(xxx,xxx,......)
-
                     self.finish()
-                    
+
                 else:
                     self.getMap(self.server_info)  # 如果是开始就读地图信息
                     self.finish()
@@ -286,7 +281,8 @@ class IOProcess(object):
 
         self.server_info = []
 
-    def mapUpdateDict(self, machine_type, index_row, index_cal):  # 更新machine的x,y,type 初始化数据结构step2
+    # 更新machine的x,y,type 初始化数据结构step2
+    def mapUpdateDict(self, machine_type, index_row, index_cal):
 
         # 找到key[machine_type]对应的list: [class1,class2,....]
         machine_loc = self.machine_state_dict[machine_type]
@@ -297,13 +293,14 @@ class IOProcess(object):
                     )  # Machine(type,x,y)
         )
 
-        self.machine_index_to_type_list.append(machine_loc[-1]) # 按machine_id加到index_list里
+        self.machine_index_to_type_list.append(
+            machine_loc[-1])  # 按machine_id加到index_list里
 
         # machine_loc[-1]: 刚添加的Machine Class，遍历对应表看接收哪几种原料
         if (machine_type >= 4):
             for receive_type in self.receivetype_for_machinetype[machine_type]:
                 self.machine_sort_by_receive[receive_type].append(
-                    machine_loc[-1])  #添加到machine_sort_by_receive
+                    machine_loc[-1])  # 添加到machine_sort_by_receive
                 sys.stderr.write(str(machine_loc[-1])+'\n')
 
     def mapFinalUpdateDict(self):  # 去除地图中没出现的型号的Machine，初始化数据结构step3
