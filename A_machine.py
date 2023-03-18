@@ -3,7 +3,8 @@ import numpy as np
 class Machine(object):
     _ID = 0
     # 工作台类
-    def __init__(self, type, loc_list):
+    def __init__(self, type, loc_list #,receive_type_list
+                 ):
 
         #坐标(x,y),剩余生产时间（帧数）,原材料格状态(二进制,哪位为1代表哪位原材料格有东西),产品格状态
 
@@ -15,6 +16,7 @@ class Machine(object):
         self.remain_frame = 0    # 剩余生产时间
         self.raw_status = 0         # 原材料格状态
         self.product_status = 0 # 产品格状态
+        # self.receive_type_list = receive_type_list
 
     def receive(self, product_id):
         # 判断是否能接受该产品
