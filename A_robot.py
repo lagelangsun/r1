@@ -21,18 +21,34 @@ class Robot(object):
         self.orientation = 0 # 朝向
         self.x = loc_list[0] # 横坐标
         self.y = loc_list[1] # 纵坐标
-        self.moving = False # 正在移动
+        self.target = None # 正在移动
 
 
     def calDistance(self, machine):
         # 计算a，b两点的距离
         return np.sqrt((machine.x - self.x)**2 + (machine.y - self.y)**2)
 
+    # def calRotateAngle(self, machine):
+    #     # 计算机器人和工作台之间的角度差
+    #     rotate_angle_to_0 = np.degrees(np.arctan2((machine.y - self.y), (machine.x - self.x)))
+    #     return rotate_angle_to_0 - np.degrees(self.orientation) # 返回机器人需要旋转的度数
+
     def calRotateAngle(self, machine):
         # 计算机器人和工作台之间的角度差
-        rotate_angle_to_0 = np.degrees(np.arctan2((machine.y - self.y), (machine.x - self.x)))
-        return rotate_angle_to_0 - np.degrees(self.orientation) # 返回机器人需要旋转的度数
+        # 2个向量模的乘积
+        v1 = [machine.x - self.x, machine.y - self.y]
+        v2 = [1, 0]
+        TheNorm = np.linalg.norm(v1)*np.linalg.norm(v2)
+        # 叉乘
+        rho =  np.rad2deg(np.arcsin(np.cross(v1, v2)/TheNorm))
+        # 点乘
+        theta = np.rad2deg(np.arccos(np.dot(v1,v2)/TheNorm))
+        if rho < 0:
+            return theta - np.rad2deg(self.orientation)
+        else:
+            return - theta - np.rad2deg(self.orientation)
 
+    
     def forward(self, linear_speed):
         # 机器人前进指令
         sys.stdout.write('forward %d %d\n' % (self.id, linear_speed))
@@ -41,15 +57,37 @@ class Robot(object):
     def find_most_valuable_machine(self, machine_state_dict):
         # 没有携带物品时，寻找价值最大的工作台
         nearest_machine = None
-        
-        for index in range(1, 10):
-            obj_id = 10 - index
-            nearest_machine = self.find_nearest_machine(machine_state_dict[obj_id])
-           
-            if nearest_machine != None:
-                return nearest_machine
-        
-        return nearest_machine
+        # sys.stderr.write('jin lai le ma ')
+        machine_list = []
+        if 7 in machine_state_dict.keys():
+            for machine in machine_state_dict[obj_id]:
+                if machine.product_status == 1:
+                    machine_list.append(machine)
+            sys.stderr.write('jin lai le ma 11111')
+            return self.find_nearest_machine(machine_list)
+        else:               
+            for obj_id in range(4, 7):
+                for machine in machine_state_dict[obj_id]:
+                    if machine.product_status == 1:
+                        machine_list.append(machine)
+            if machine_list != []:
+                # sys.stderr.write('jin lai le ma 222222222222222222222222222222222222222222')
+                # for machine in machine_list:
+                #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
+                sys.stderr.write('machine_list'+ str(machine_list)+'\n')
+                return self.find_nearest_machine(machine_list)
+            else:
+                for obj_id in range(1, 4):
+                    for machine in machine_state_dict[obj_id]:
+                        if machine.product_status == 1:
+                            machine_list.append(machine)
+                if machine_list != []:
+                    # sys.stderr.write('jin lai le ma 33333333333333333333333333333333333333333')
+                    # for machine in machine_list:
+                    #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
+                    
+                    return self.find_nearest_machine(machine_list)
+                
     
     def find_nearest_machine(self, machine_list):
         # 在machine_list中寻找最近的machine
@@ -95,14 +133,28 @@ class Robot(object):
     def move(self, machine):
         distance = self.calDistance(machine)
         # sys.stderr.write('move distance'+str(distance)+'\n')
-        rotate_angle = self.calRotateAngle(machine)
+        angle_diff = self.calRotateAngle(machine)
+        rotate_angle = 0
+        # sys.stderr.write('robot orientation is: '+str(np.degrees(self.orientation)) + '\n')
+        # sys.stderr.write('angle_diff'+str(angle_diff)+'\n')
+        if (abs(angle_diff) > 3.6):
+            
+            if angle_diff > 0:
+                if angle_diff > 180:
+                    rotate_angle = - np.pi
+                else:
+                    rotate_angle = np.pi
+            else:
+                if angle_diff < - 180:
+                    rotate_angle = np.pi
+                else:
+                    rotate_angle = - np.pi
+    
+        self.rotate(rotate_angle)
         # sys.stderr.write('move rotate_angle'+str(rotate_angle)+'\n')
-        if (abs(rotate_angle) > 3.6):
-            self.rotate(np.pi*(rotate_angle/abs(rotate_angle)))
             # sys.stderr.write('move rotate  angle command '+str(rotate_angle)+'\n')
-        else:
             # sys.stderr.write('ininin'+'\n')
-            self.rotate(0)
+
 
         if (distance > 0.4):
             self.forward(6)
@@ -113,6 +165,12 @@ class Robot(object):
         # 机器人旋转指令
         sys.stdout.write('rotate %d %f\n' % (self.id, angular_v))
 
+    def calSpeed(self):
+        if int(abs(self.y - 50)) < 2 | int(abs(self.y - 0)) < 2 | int(abs(self.x - 50)) < 2 | int(abs(self.x - 0)) < 2:
+            return 1
+        else:
+            return 6
+        
     def buy(self):
         sys.stdout.write('buy %d\n' % self.id)
 
