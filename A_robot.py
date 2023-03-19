@@ -22,6 +22,7 @@ class Robot(object):
         self.x = loc_list[0] # 横坐标
         self.y = loc_list[1] # 纵坐标
         self.target = None # 正在移动
+        self.behavior = '' # 行为：买/卖+目标工作台id+物品类型
 
 
     def calDistance(self, machine):
@@ -60,33 +61,37 @@ class Robot(object):
         # sys.stderr.write('jin lai le ma ')
         machine_list = []
         if 7 in machine_state_dict.keys():
+            for machine in machine_state_dict[7]:
+                if machine.product_status == 1:
+                    machine_list.append(machine)
+            # sys.stderr.write('jin lai le ma 11111')
+            if self.find_nearest_machine(machine_list) != None:
+                return self.find_nearest_machine(machine_list)
+        machine_list = []       
+        for obj_id in range(4, 7):
             for machine in machine_state_dict[obj_id]:
                 if machine.product_status == 1:
                     machine_list.append(machine)
-            sys.stderr.write('jin lai le ma 11111')
-            return self.find_nearest_machine(machine_list)
-        else:               
-            for obj_id in range(4, 7):
-                for machine in machine_state_dict[obj_id]:
-                    if machine.product_status == 1:
-                        machine_list.append(machine)
-            if machine_list != []:
-                # sys.stderr.write('jin lai le ma 222222222222222222222222222222222222222222')
-                # for machine in machine_list:
-                #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
-                sys.stderr.write('machine_list'+ str(machine_list)+'\n')
+        if machine_list != []:
+            # sys.stderr.write('jin lai le ma 222222222222222222222222222222222222222222')
+            # for machine in machine_list:
+            #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
+            sys.stderr.write('machine_list'+ str(machine_list)+'\n')
+            if self.find_nearest_machine(machine_list) != None:
                 return self.find_nearest_machine(machine_list)
-            else:
-                for obj_id in range(1, 4):
-                    for machine in machine_state_dict[obj_id]:
-                        if machine.product_status == 1:
-                            machine_list.append(machine)
-                if machine_list != []:
-                    # sys.stderr.write('jin lai le ma 33333333333333333333333333333333333333333')
-                    # for machine in machine_list:
-                    #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
-                    
-                    return self.find_nearest_machine(machine_list)
+        machine_list = []
+        for obj_id in range(1, 4):
+            for machine in machine_state_dict[obj_id]:
+                if machine.product_status == 1:
+                    machine_list.append(machine)
+        if machine_list != []:
+            # sys.stderr.write('jin lai le ma 33333333333333333333333333333333333333333')
+            # for machine in machine_list:
+            #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
+            
+            if self.find_nearest_machine(machine_list) != None:
+                return self.find_nearest_machine(machine_list)
+        return None
                 
     
     def find_nearest_machine(self, machine_list):
@@ -130,6 +135,18 @@ class Robot(object):
     #     # sys.stderr.write('final_nearest_machine'+str(nearest_machine.type) + '\n')
     #     return nearest_machine
     
+    def find_buyer(self, machine_sort_by_receive):
+        buyer_list = [] # 有空间购买该物品的工作台list
+        buyer = None
+        for machine in machine_sort_by_receive[self.take_obj]:
+            if machine.receive(self.take_obj):
+                # 如果该工作台可以购买该物品，加入进list
+                buyer_list.append(machine)
+
+            # 寻找上面的list中最近的工作台
+        buyer = self.find_nearest_machine(buyer_list)
+        return buyer
+           
     def move(self, machine):
         distance = self.calDistance(machine)
         # sys.stderr.write('move distance'+str(distance)+'\n')
@@ -176,6 +193,9 @@ class Robot(object):
 
     def sell(self):
         sys.stdout.write('sell %d\n' % self.id)
+
+    def destroy(self):
+        sys.stdout.write('destroy %d\n' % self.id)
 
     def update(self, data_line):
 

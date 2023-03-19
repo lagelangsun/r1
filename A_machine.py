@@ -24,6 +24,10 @@ class Machine(object):
     def receive(self, product_id):
         # 判断是否能接受该产品
         # 转成二进制，然后移位，判断最后一位是不是1
+        if int(self.type) == 6:
+            sys.stderr.write('machine_id is'+str(self.id)+'\n')
+            sys.stderr.write('raw_status is'+str(self.raw_status)+'\n')
+            sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
         if int(bin(int(self.raw_status)>>int(product_id))[-1]) == int(1):
             return False
         else:
