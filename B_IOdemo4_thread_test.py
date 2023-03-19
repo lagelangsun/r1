@@ -197,7 +197,7 @@ class IOProcess(object):
             for receive_type in self.receivetype_for_machinetype[machine_type]:
                 self.machine_sort_by_receive[receive_type].append(
                     machine_loc[-1])  # 添加到machine_sort_by_receive
-                sys.stderr.write(str(machine_loc[-1])+'\n')
+                # sys.stderr.write(str(machine_loc[-1])+'\n')
 
     def mapFinalUpdateDict(self):  # 去除地图中没出现的型号的Machine，初始化数据结构step3
         for i in range(9):
@@ -332,6 +332,6 @@ class RobotAction(threading.Thread):
         #     if RECEIVE_DATA_FINISH_FLAG:
         #         control()
 
-        # 方案2:
-        # control()
+        方案2:
+        control()
 

@@ -4,7 +4,7 @@ from A_property import Property
 from A_pre_calculate import CalculateFunc
 from A_machine import Machine
 from A_robot import Robot
-
+import time
 
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],
                            5: [7, 9], 6: [7, 9], 7: [8, 9]}
@@ -59,14 +59,13 @@ class IOProcess(object):
                     # self.machine_state_dict(type:dictionary): {key:工作台类型(int),value:[Machine_class_x,.....]}
                     # 其他参数:   帧数:self.frame_id   当前的钱:self.current_money     工作台数量: self.k
                     self.getInfo(self.server_info)  # 更新工位和小车信息
-
                     sys.stdout.write('%d\n' % (self.frame_id))
                     # self.flag = self.flag + 1 #判断是否跳帧
                     # sys.stderr.write('flag %d\n' % (self.flag))
                     # sys.stderr.write('frame_id %d\n' % (self.frame_id))
                     # for i in range(len(self.robot_state_list)):
+                    #     robot = self.robot_state_list[i]
                     for i in range(1):
-                        # robot = self.robot_state_list[i]
                         robot = self.robot_state_list[0]
                         # sys.stderr.write('serverinfo'str(machine_list))
                         # 机器人携带的物品
@@ -99,16 +98,16 @@ class IOProcess(object):
                                 nearest_machine = robot.find_nearest_machine(
                                     machine_list)
                                 nearest_machine.product_status = 0
-                            sys.stderr.write(
-                                'nearest_machine is '+str(nearest_machine.type) + '\n')
+                            # sys.stderr.write(
+                            #     'nearest_machine is '+str(nearest_machine.type) + '\n')
                             # sys.stderr.write('nearest_machine:'+str(nearest_machine.type))
                             # if robot.calDistance(nearest_machine) < 0.4:
                             #     robot.buy()
                             # else:
-                            sys.stderr.write(
-                                'nearest_machine x is '+str(nearest_machine.x) + '\n')
-                            sys.stderr.write(
-                                'nearest_machine y is '+str(nearest_machine.y) + '\n')
+                            # sys.stderr.write(
+                            #     'nearest_machine x is '+str(nearest_machine.x) + '\n')
+                            # sys.stderr.write(
+                            #     'nearest_machine y is '+str(nearest_machine.y) + '\n')
                             robot.move(nearest_machine)
                             robot.moving = True
 
@@ -136,8 +135,8 @@ class IOProcess(object):
                                         nearest_machine = robot.find_most_valuable_machine(
                                             self.machine_state_dict)
                                         nearest_machine.product_status = 0
-                                    sys.stderr.write(
-                                        'nearest_machine'+str(nearest_machine.type) + '\n')
+                                    # sys.stderr.write(
+                                    #     'nearest_machine'+str(nearest_machine.type) + '\n')
                                     robot.move(nearest_machine)  # 移动至目标工作台
                                     robot.moving = True
                             else:
@@ -172,8 +171,8 @@ class IOProcess(object):
                                         # 寻找上面的list中最近的工作台
                                         buyer = robot.find_nearest_machine(
                                             buyer_list)
-                                    sys.stderr.write(
-                                        'buyer'+str(buyer.type) + '\n')
+                                    # sys.stderr.write(
+                                    #     'buyer'+str(buyer.type) + '\n')
                                     robot.move(buyer)
                                     robot.moving = True
 
@@ -300,7 +299,7 @@ class IOProcess(object):
             for receive_type in self.receivetype_for_machinetype[machine_type]:
                 self.machine_sort_by_receive[receive_type].append(
                     machine_loc[-1])  # 添加到machine_sort_by_receive
-                sys.stderr.write(str(machine_loc[-1])+'\n')
+                # sys.stderr.write(str(machine_loc[-1])+'\n')
 
     def mapFinalUpdateDict(self):  # 去除地图中没出现的型号的Machine，初始化数据结构step3
         for i in range(9):
