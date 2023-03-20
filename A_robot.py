@@ -62,27 +62,32 @@ class Robot(object):
         machine_list = []
         if 7 in machine_state_dict.keys():
             for machine in machine_state_dict[7]:
-                if machine.product_status == 1:
+                if (int(machine.product_status) == 1) & ( not machine.product_lock):
                     machine_list.append(machine)
             # sys.stderr.write('jin lai le ma 11111')
             if self.find_nearest_machine(machine_list) != None:
                 return self.find_nearest_machine(machine_list)
+            
         machine_list = []       
         for obj_id in range(4, 7):
             for machine in machine_state_dict[obj_id]:
-                if machine.product_status == 1:
+                sys.stderr.write('machine_product_status is'+ str(machine.product_status)+'\n')
+                sys.stderr.write('machine_product_lock is'+ str(machine.product_lock)+'\n')
+                if (int(machine.product_status) == 1) & ( not machine.product_lock):
+                    sys.stderr.write('***************************************************************\n')
                     machine_list.append(machine)
         if machine_list != []:
             # sys.stderr.write('jin lai le ma 222222222222222222222222222222222222222222')
             # for machine in machine_list:
             #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
-            sys.stderr.write('machine_list'+ str(machine_list)+'\n')
+            # sys.stderr.write('machine_list'+ str(machine_list)+'\n')
             if self.find_nearest_machine(machine_list) != None:
                 return self.find_nearest_machine(machine_list)
+            
         machine_list = []
         for obj_id in range(1, 4):
             for machine in machine_state_dict[obj_id]:
-                if machine.product_status == 1:
+                if int(machine.product_status) == 1:
                     machine_list.append(machine)
         if machine_list != []:
             # sys.stderr.write('jin lai le ma 33333333333333333333333333333333333333333')
@@ -139,7 +144,7 @@ class Robot(object):
         buyer_list = [] # 有空间购买该物品的工作台list
         buyer = None
         for machine in machine_sort_by_receive[self.take_obj]:
-            if machine.receive(self.take_obj):
+            if machine.receive(self.take_obj) & (self.take_obj not in machine.lock_list):
                 # 如果该工作台可以购买该物品，加入进list
                 buyer_list.append(machine)
 
@@ -152,10 +157,10 @@ class Robot(object):
         # sys.stderr.write('move distance'+str(distance)+'\n')
         angle_diff = self.calRotateAngle(machine)
         rotate_angle = 0
+        speed = 0
         # sys.stderr.write('robot orientation is: '+str(np.degrees(self.orientation)) + '\n')
         # sys.stderr.write('angle_diff'+str(angle_diff)+'\n')
         if (abs(angle_diff) > 3.6):
-            
             if angle_diff > 0:
                 if angle_diff > 180:
                     rotate_angle = - np.pi
@@ -166,17 +171,22 @@ class Robot(object):
                     rotate_angle = np.pi
                 else:
                     rotate_angle = - np.pi
-    
+            speed = 3
+            self.forward(speed)
+        else:
+            if (distance > 0.4):
+                speed = 6
+            else:
+                speed = 2
+            self.forward(speed)
+
         self.rotate(rotate_angle)
         # sys.stderr.write('move rotate_angle'+str(rotate_angle)+'\n')
             # sys.stderr.write('move rotate  angle command '+str(rotate_angle)+'\n')
             # sys.stderr.write('ininin'+'\n')
 
 
-        if (distance > 0.4):
-            self.forward(6)
-        else:
-            self.forward(1)
+        
 
     def rotate(self, angular_v):
         # 机器人旋转指令
@@ -187,7 +197,8 @@ class Robot(object):
             return 1
         else:
             return 6
-        
+    
+
     def buy(self):
         sys.stdout.write('buy %d\n' % self.id)
 

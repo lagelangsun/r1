@@ -19,20 +19,31 @@ class Machine(object):
         self.remain_frame = 0    # 剩余生产时间
         self.raw_status = 0         # 原材料格状态
         self.product_status = 0 # 产品格状态
+        self.product_lock = False # 产品格锁
+        self.buy_status = 0 # 工作台已经预定购买的产品状态
+        self.lock_list = []
         # self.receive_list = MACHINE_RECEIVE_OBJECT_LIST
 
     def receive(self, product_id):
         # 判断是否能接受该产品
         # 转成二进制，然后移位，判断最后一位是不是1
-        if int(self.type) == 6:
-            sys.stderr.write('machine_id is'+str(self.id)+'\n')
-            sys.stderr.write('raw_status is'+str(self.raw_status)+'\n')
-            sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
+        # if int(self.type) == 6:
+        #     sys.stderr.write('machine_id is'+str(self.id)+'\n')
+        #     sys.stderr.write('raw_status is'+str(self.raw_status)+'\n')
+        #     sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
         if int(bin(int(self.raw_status)>>int(product_id))[-1]) == int(1):
             return False
         else:
             return True
     
+    def lock(self, obj_id):
+        if int(self.type) not in [8, 9]:
+            self.lock_list.append(obj_id)
+        # sys.stderr.write('lock_list'+str(self.lock_list)+'\n')
+
+    def unlock(self, obj_id):
+        self.lock_list.remove(obj_id)
+
     def update(self, data_line):
         self.x = data_line[0] # 横坐标
         self.y = data_line[1] # 纵坐标
