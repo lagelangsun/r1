@@ -152,6 +152,7 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                         D_min = D_mid
         # sys.stderr.write('pick seller '+str(min_D_machine_id)+'\n')
 
+        # sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n')
         self.min_D_machine_id = min_D_machine_id
 
     def pickBuyerMachine(self, machine_dict, robot_i): # 就是这里容易出问题**********************
@@ -173,7 +174,7 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
             D_min = 2500 
             D_mid = 2500
             for index_1,machine in enumerate(machine_dict[6]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
-                sys.stderr.write(str(machine.type)+'  ')
+                # sys.stderr.write(str(machine.type)+'  ')
                 if machine.lock_list == []: # 如果目标没被别人选了
                     # sys.stderr.write('in if1  ')
                     if machine.receive(robot_i.take_obj): # 目标这个原料格没满
@@ -185,7 +186,6 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                         min_D_machine_id = machine.id
                         D_min = D_mid
             # sys.stderr.write(str(robot_i.id)+' in 4,5,6 ' + str(min_D_machine_id)+'\n')
-
             self.min_D_machine_id = min_D_machine_id
         
         else: # 否则就是拿着7，得去找8
@@ -204,21 +204,29 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                         
             self.min_D_machine_id = min_D_machine_id
     
-    def selectMinDMachineId_456(self, robot_i, machine_dict): # 根据最小D选456买家
+    def selectMinDMachineId_456(self, robot_i, machine_dict): # 根据最小D选4,5,6买家
 
         min_D_machine_id = -1
-        D_min = 2500 
+        D_min = 5000 
         for index_1,machine_type_classlist in enumerate(machine_dict): # machine_dict:[[class4_1..],[class5_1,..],[class6_1]]
             for index_2, machine in enumerate(machine_type_classlist):   # machine_type_classlist:[class4_1,class4_2,..]
-
+                # if(robot_i.id == 3):
+                #     sys.stderr.write('two for machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
+                #     if  machine.receive(robot_i.take_obj): sys.stderr.write('can receive\n')
+                #     if not (robot_i.take_obj in machine.lock_list): sys.stderr.write('not target\n')
                 if machine.receive(robot_i.take_obj) & (not (robot_i.take_obj in machine.lock_list)) : # 目标这个原料格没满，并且这个格子没被别人锁住
-    
-                    D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * (1/(self.type7_need_num[machine.type]+0.1) * self.factor2)  # 按照公式去找4,5,6 D = d * type7_need_type4_num * type_receive_is_empty
-
+                    # if(robot_i.id ==3): sys.stderr.write('in ? machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
+                    D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * (1/(self.type7_need_num[machine.type]+1) * self.factor2)  # 按照公式去找4,5,6 D = d * type7_need_type4_num * type_receive_is_empty
+                    # sys.stderr.write('D_mid: '+str(D_mid)+'\n')
                     if(D_mid < D_min): 
+                        
                         min_D_machine_id = machine.id
+                        # if(robot_i.id ==3): 
+                        #     sys.stderr.write('start update machine_id machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
+                        #     sys.stderr.write('D_mid: '+str(D_mid)+'\n')
+                        #     sys.stderr.write('min_D_machine_id: '+str(min_D_machine_id)+'\n')
                         D_min = D_mid
-                    
+        # if (robot_i.id ==3): sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n\n')
         self.min_D_machine_id = min_D_machine_id
 
     def buyInterupt(self, machine, robot_state_list):
