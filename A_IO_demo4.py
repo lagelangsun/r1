@@ -3,7 +3,7 @@ import numpy as np
 from A_property import Property
 from A_pre_calculate import CalculateFunc
 from A_machine import Machine
-from A_robot import Robot
+from A_robot_demo1 import Robot
 from A_control_demo1 import Control
 from A_decision_demo1 import Decision
 import time
@@ -29,14 +29,15 @@ class IOProcess(object):
         self.machine_index_to_type_list = []     # 按工作台id排序的list
 
         self.machine_state_dict_id = {1: [], 2: [], 3: [], 4: [],   # 各类型工作台包含的id
-                                   5: [], 6: [], 7: [], 8: [], 9: []}   
+                                      5: [], 6: [], 7: [], 8: [], 9: []}
 
         self.machine_num_of_type = {}
+        self.interupt_4567 = []
 
         self.frame_id = 1  # 帧数
         self.current_money = 200000  # 钱
         self.k = 0  # 机器数量
-        self.product_status_456_dcit ={4:[],5:[],6:[]}
+        # self.product_status_456_dcit = []
 
         self.preCalculate = CalculateFunc()     # 计算模块
 
@@ -62,11 +63,13 @@ class IOProcess(object):
                     sys.stdout.write('%d\n' % (self.frame_id))
 
                     self.decesion.decesion(self.robot_state_list
-                                  , self.machine_state_dict
-                                  , self.machine_sort_by_receive
-                                  , self.machine_index_to_type_list
-                                  )  # 需要小车信息，需要工位信息 demo1:只考虑没有9的情况
+                                           , self.machine_state_dict
+                                           , self.machine_sort_by_receive
+                                           , self.machine_index_to_type_list
+                                           , self.interupt_4567
+                                           )  # 需要小车信息，需要工位信息 demo1:只考虑没有9的情况
 
+                    self.clear4567Products() # 用完就擦除
                     self.finish()
 
                 else:
@@ -97,9 +100,11 @@ class IOProcess(object):
 
         self.server_info = []
 
+    # *****更新工作台参数******
     def infoUpdateMachineDict(self, server_info_machine):  # 更新工作台参数,更新两个字典
 
-        for index_row, line in enumerate(server_info_machine):  # 工作台信息行
+        # 工作台信息行,index_row的值就是工作台id
+        for index_row, line in enumerate(server_info_machine):
 
             # str转int 这里面从txt读的穿捡来的data_line全是文本，不知道到时候服务器传进来的是整数还是文本
             data_line = list(map(float, line.strip("\n").split()))
@@ -108,9 +113,13 @@ class IOProcess(object):
 
             self.infoUpdateMachineStateDict(machine_type, index_row, data_line)
 
-            if(machine_type >= 4):  # *************demo3_2*********
+            if(machine_type >= 4):  # 更新按接收分类的字典，我有个问题，是不是更新一次就行了，因为是取地址，所以这个根本不用更新，一次更新就全体更新了******************
                 self.infoUpdateMachineSortByRecive(
                     machine_type, index_row, data_line)
+                
+            if machine_type in (4, 5, 6, 7):  # 如果是4,5,6,7型号的,判断是否生产完毕
+                if data_line[5]: # 更新是否生产完毕list，list里面直接append进这个工作台对象去
+                    self.infoUpdate4567Products(machine_type, index_row)
 
     # 更新machine_state_dict
     def infoUpdateMachineStateDict(self, machine_type, index_row, data_line):
@@ -133,7 +142,17 @@ class IOProcess(object):
                 if(receive_sort_class.id == index_row):
                     receive_sort_class.update(data_line[1:6])
 
-    def infoUpdateRobotList(self, server_info_robot):  # 更新机器人参数
+    def infoUpdate4567Products(self, machine_type, index_row):
+        self.interupt_4567.append(self.machine_index_to_type_list[index_row]
+            )  # 把生产好了的工作台类加到list中.
+
+    def clear4567Products(self):  # 每次更新完后都应该清空这个，
+        self.interupt_4567 = []
+        #其实更符合逻辑的方法是每一帧改变值而不是清空，但是这样的话在决策的时候还要遍历一遍这些找到值为1的，所以相当于遍历了两边，符合逻辑但是时间复杂度高
+
+    # *****更新机器人参数******
+
+    def infoUpdateRobotList(self, server_info_robot):
 
         for index_row, line in enumerate(server_info_robot):  # 机器人信息行
             data_line = list(map(float, line.strip("\n").split())
@@ -201,14 +220,6 @@ class IOProcess(object):
     def finish(self):
         sys.stdout.write('OK\n')
         sys.stdout.flush()
-
-    def finishTest(self):
-        sys.stdout.write('%d\n' % int(self.frame_id))
-        line_speed, angle_speed = 3, 1.5
-        for robot_id in range(4):
-            sys.stdout.write('forward %d %d\n' % (robot_id, line_speed))
-            sys.stdout.write('rotate %d %f\n' % (robot_id, angle_speed))
-        self.finish()
 
     # def outputInfo(self):
     #     print()  # 帧ID

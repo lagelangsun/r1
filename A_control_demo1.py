@@ -3,7 +3,7 @@ import numpy as np
 from A_property import Property
 from A_pre_calculate import CalculateFunc
 from A_machine import Machine
-from A_robot import Robot
+from A_robot_demo1 import Robot
 import time
 
 
