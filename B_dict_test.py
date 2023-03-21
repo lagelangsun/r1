@@ -8,12 +8,9 @@ machine_state_dict = {1: [], 2: [], 3: [], 4: [],  # {key:工作台类型(int),v
 
 
 # print([machine_sort_by_receive[1],machine_sort_by_receive[2],machine_sort_by_receive[3]])
-A = {1:0,2:0,3:0}
-A.items()
-for i in A:
-    print(i)
-
-
+A = [1,2,3,4,5]
+B = [value for key,value in machine_sort_by_receive.items()]
+print(B)
 # for i in range(9):
 #     if i in (1,2,3,4,5,6,7,8,9):
 #         if i == 3:

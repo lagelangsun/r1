@@ -32,7 +32,7 @@ class Machine(object):
         #     sys.stderr.write('raw_status is'+str(self.raw_status)+'\n')
         #     sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
         if int(bin(int(self.raw_status)>>int(product_id))[-1]) == int(1):
-            return False
+            return False # 不可接受
         else:
             return True
     

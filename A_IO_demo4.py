@@ -36,9 +36,9 @@ class IOProcess(object):
         self.frame_id = 1  # 帧数
         self.current_money = 200000  # 钱
         self.k = 0  # 机器数量
+        self.product_status_456_dcit ={4:[],5:[],6:[]}
 
         self.preCalculate = CalculateFunc()     # 计算模块
-        self.decesion
 
         # self.control = Controlclass() #
 
@@ -61,12 +61,11 @@ class IOProcess(object):
                     self.getInfo(self.server_info)  # 更新工位和小车信息
                     sys.stdout.write('%d\n' % (self.frame_id))
 
-                    self.decesion(self.robot_state_list
+                    self.decesion.decesion(self.robot_state_list
                                   , self.machine_state_dict
                                   , self.machine_sort_by_receive
                                   , self.machine_index_to_type_list
-                                  , self.robot_target_machine_order
-                                  , self.machine_num_of_type)  # 需要小车信息，需要工位信息 demo1:只考虑没有9的情况
+                                  )  # 需要小车信息，需要工位信息 demo1:只考虑没有9的情况
 
                     self.finish()
 

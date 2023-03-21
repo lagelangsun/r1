@@ -21,4 +21,4 @@ class Control(object):
             if order[3] != 0:
                 robot_list[order[0]].buy()
             if order[4] != 0:
-                robot_list[order[0]].sell
+                robot_list[order[0]].sell()
