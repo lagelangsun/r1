@@ -51,13 +51,14 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         # 逻辑应该是：
         # 1. 初始的时候小车move最近的1,2,3 (move) 没必要，因为初始的时候need_factor 和 empty_factor都是一样的
         # 2. 到了最近的1,2,3之后，触发买指令 (buy)
-        # 3. 拿到1,2,3之后，根据公式(D = d * type7_need_type4_num * type_receive_is_empty)计算到可接受这个obj的所有工位的加权距离，小车move到加权距离最短 (move)
-        # 4. 到了加权距离最短的工作台后，卖掉 (sell)
-        # 5_1. 根据type1,2,3工作台的数量，调度小车去买1,2,3  (buy)
-        # 5_2. 若有类型为4,5,6的工作台生产完毕，距离其最近的手上没货的小车去买，然后卖给7 (if move buy4,5,6 move sell7)
+        # 3. 拿到1,2,3之后，根据公式(D = d * type7_need_type4_num * type_receive_is_empty)计算到可接受这个obj的所有工位的加权距离，小车move到加权距离最短的4 or 5 or 6 (move)
+        # 4. 到了加权距离最短的工作台后，卖掉 (sell),卖掉后清空target，重新找target
+        # 5. 根据所需type1,2,3的数量，调度小车去买1 or 2 or 3  (buy)
         # 6. 将型号i卖给7成功后, 7对应型号nedd_typei_num -1  (self.type7_need_typei_num - 1)
         # 7. 若7生产完毕，且7原料格没满，则不管，直到下次有小车来送原料4,5,6到7，直接买走送到8 (if buy7 move sell8)
         # 8. 若7原料格已满且生产完毕，调度最近手上无货的小车去买7送8
+        # 中断: ①若有类型为4,5,6的工作台生产完毕，距离其最近的手上没货的小车(且该小车还没有把4,5,6当买家)去买，就算该小车已经把target定为卖家1,2,3，也重新换目标,然后卖给7 (if move buy4,5,6 move sell7)
+        #       ②若有类型为7的工作台生产完毕，逻辑同上。
 
         # buy 1,2,3
         
@@ -65,45 +66,65 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         # machine_state_list =  [machine_state_dict.values()]
         machine_state_list =  [value for key,value in machine_state_dict.items()] 
 
-        if interupt_4567: # 如果不为空，interupt_4567是个实例化列表[classx,classy,....],经过决策部分就会给小车设了target了
-                          # 会在进入for之前截胡，直接把target给设好
-            sys.stderr.write(str(interupt_4567)+'\n')
-            for product_finish_class in interupt_4567:  # 遍历这个列表，列表里是一个个machine类
-                if product_finish_class.type in (4,5,6): # 如果是4,5,6
-                    sys.stderr.write('i amm 456 \n ' + str(self.type7_need_num))
-                    if self.type7_need_num[product_finish_class.type] != 0:  # 如果可接受该型号，即所有7的该型号的原料格不为空 != 0
-                        sys.stderr.write('i need that \n')
-                        self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()
-                else: # 如果是7，直接去买
+        # 如果有生产好的4,5,6,7 会在进入for之前截胡，直接把target给设好
+        if interupt_4567: # 如果不为空，interupt_4567是个实例化列表[classx,classy,....]
+            # sys.stderr.write(str(interupt_4567)+'\n')
+
+            # 遍历这个列表，列表里是一个个machine类
+            for product_finish_class in interupt_4567:  # 列表里是一个个machine类
+
+                 # 如果是7，直接去买,先判断interupt_4567里是不是有7,7的优先级高
+                if product_finish_class.type == 7: # 如果是7
+
                     self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()
+
+                # 如果是4,5,6, 判断该帧是否有合适的小车去买，没有也无所谓，下一帧还会发来这个list，知道找到合适的小车
+                else:  
+                    # sys.stderr.write('i amm 456 \n ' + str(self.type7_need_num)+'\n')
+                    # sys.stderr.write(str(self.type7_need_num)+'\n')
+                    # 如果还没被锁定(没有小车把这里设为目标)
+                    if not product_finish_class.buyer_lock: # 如果还没被锁定
+
+                        # 如果场上有可接受该型号(4,5,6)物料的工作台(目前只考虑了7，没考虑9)
+                        if self.type7_need_num[product_finish_class.type] != 0:  #所有7的该型号的原料格不为空 != 0
+                            # sys.stderr.write('i need that \n')
+                            self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()
 
                 
 
         # 如果触发了中断小车还要遍历不，其实可以遍历，因为大部分小车逻辑都简单，都是朝目标前进，所以不会执行太久从而引起跳帧
         for i in range(4):                              # 四个小车遍历
             # sys.stderr.write("in robot\n")
-            robot_at_machine_id = robot_state_list[i].atmachine_id  # 将小车在哪个工作台附近赋给变量robot_at_machine_id
-            robot_i = robot_state_list[i]               # 将小车类赋给robot_i
+            robot_at_machine_id = robot_state_list[i].atmachine_id  # 将小车在哪个工作台附近赋给变量robot_at_machine_id，要不太长了
+            robot_i = robot_state_list[i]               # 将小车类赋给robot_i,要不太长了
 
-            if (robot_at_machine_id == -1) | (not (robot_i.target)):              # 如果小车现在不在工作台附近，或者没有目标执行运动指令，因为可能出现刚买卖完下一帧还在工作台附近的情况
+            # 如果小车现在不在工作台附近，或者没有目标，则执行运动指令，因为可能出现刚买卖完还没设定目标下一帧还在工作台附近的情况
+            if (robot_at_machine_id == -1) | (not (robot_i.target)):              
                 # sys.stderr.write("in move\n")
-                if robot_i.target:                      # 如果已经有目标,即target不为空,说明不是刚买卖完的情况。target:[目标id, 买，卖]
+
+                # 如果已经有目标,说明不是刚买卖完的情况。target:[目标id, 买，卖]
+                if robot_i.target:  # target不为空,target:[目标id, 买，卖]              
                         robot_i.move(machine_index_to_type_list[robot_i.target[0]]) # move 
-                        
-                else:                                   # 如果没有目标(刚买卖完)，就选目标,所以在买卖后需要将target置空，买卖后的下一帧会执行到这里
+                
+                # 如果没有目标(刚买卖完)，就到这里选目标,所以在买卖后需要将target置空，买卖后的下一帧会执行到这里
+                else:                                  
 
-                    if not robot_i.take_obj:            # 如果机器人手上没货，就要去买，找卖家选择要去哪个target_id买
+                    # 如果机器人手上没货，就要去买，找卖家选择要去哪个target_id买
+                    if not robot_i.take_obj:            # 如果机器人手上没货
 
-                        self.pickSellerMachine(machine_state_list, robot_i)     # 更新self.min_D_machine_id
-                        if self.min_D_machine_id != -1:   #如果在这一帧找到了合适的目标
+                        self.pickSellerMachine(machine_state_list, robot_i)     # 更新self.min_D_machine_id,默认为-1
+
+                        #如果在这一帧找到了合适的目标
+                        if self.min_D_machine_id != -1:   #如果self.min_D_machine_id不是-1了
                             robot_i.target = [self.min_D_machine_id, 1, 0]          # 设置目标位,买位置1
-                        else:   #否则，就在这里等等吧 ************************************
+                        else:   #否则，就在这里等等吧 ************************************这个地方还得优化，没找到合适的目标咋办。有9就好办了
                             robot_i.target = [] # 就上一帧的目标，那就置空，等着下一帧再选
                         robot_i.move(machine_index_to_type_list[self.min_D_machine_id]) # move
-                        
-                    else:                               # 否则就要去卖，找买家，选择要去哪个target_id卖
+                    
+                    # 机器人手上有货，就要去卖，找买家，选择要去哪个target_id卖
+                    else:                               
 
-                        self.pickBuyerMachine(machine_state_list, robot_i)
+                        self.pickBuyerMachine(machine_state_list, robot_i) # 找买家
                         if self.min_D_machine_id != -1:
                             machine_index_to_type_list[self.min_D_machine_id].lock(robot_i.take_obj) # 锁住，选定的machine的take_obj原料格被锁住了
                             robot_i.target = [self.min_D_machine_id, 0, 1]                           # 设置目标位，卖位置1
@@ -111,24 +132,31 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                             robot_i.target = [] # 置空，等着下几帧再选 ************************************
                         robot_i.move(machine_index_to_type_list[self.min_D_machine_id])          # move
                         
- 
-            else:                                              # 如果小车在工作台附近，判断是在哪个工作台附近
+            # 如果小车在工作台附近，判断是在哪个工作台附近
+            else:                                              
                 # sys.stderr.write("in action 1\n")
                 # sys.stderr.write(str(robot_at_machine_id)+"\n") 
                 # sys.stderr.write(str(robot_i.target)+"\n")
-                if robot_i.target[0] == robot_at_machine_id:   # 如果是在目标工作台附近,说明有动作，有买或者卖
+
+                # 如果是在目标工作台附近,说明需要有动作，有买或者卖
+                if robot_i.target[0] == robot_at_machine_id:   # 如果是在目标工作台附近
                     
                     # 判断是要对目标工作台做什么行动，同时应重置目标
                     if robot_i.target[1]:  # 如果是目标是买target_id
-                        robot_i.buy()
+                        robot_i.buy()      # *************************后面如果优化1,2,3的话也都要加上买锁
+                        machine_index_to_type_list[int(robot_at_machine_id)].buyerUnlock() # 后面如果优化1,2,3的话也都要加上买锁,现在只解4,5,6锁，因为只有4,5,6上锁
 
-                    else: # 如果是目标是卖给target_id
+                    # 如果是目标是卖给target_id
+                    else: 
                         robot_i.sell()
                         self.action_finish = True
-                        machine_index_to_type_list[int(robot_at_machine_id)].unlock(int(robot_i.take_obj)) # 卖了就解锁，其他小车又可以找这个当买家了，因为是找买家的时候锁定的
+
+                        # 如果不是8,9，卖了就解锁，其他小车又可以找这个当买家了，因为是找买家的时候锁定
+                        if not (machine_index_to_type_list[int(robot_at_machine_id)].type in (8,9)):
+                            machine_index_to_type_list[int(robot_at_machine_id)].unlock(int(robot_i.take_obj)) # 卖了就解锁
                         # 在这里解锁
 
-                    robot_i.target = []             # 清空target,下一帧的时候会重新select目标  ,也不能随意清空，得判断你是不是真的买到了或者卖了再清空，否则就会出错，现在先不考虑这个bug**************************************************
+                    robot_i.target = []             # 清空target,下一帧的时候会重新select目标  ,也不能随意清空，得判断你是不是真的买到了或者卖了再清空，否则就会出错，现在先不考虑这个bug，这个判断很不好搞**************************************************
     
                 else:   # 否则继续运动
                     robot_i.move(machine_index_to_type_list[robot_i.target[0]])
@@ -141,14 +169,19 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         #                          , self.all_robot_order_dict  # 这个变量，传起来有点复杂，但是如果能将控制从Robot类中拆出来就会好很多。
         #                          )
             
-    def pickSellerMachine(self, machine_state_list, robot_i): #去找1,2,3买,# **********************可优化，这里目前也出问题了，最后会疯狂买一样的发现没有地方可卖，所以要优化，主要是优化factor
+    #去找1,2,3买,# **********************可优化，主要是优化factor
+    def pickSellerMachine(self, machine_state_list, robot_i): 
 
         # sys.stderr.write('pick seller \n')
         min_D_machine_id = -1
         D_max = 0 
+
+        # 遍历所有卖家
         for index_1,machine_type_classlist in enumerate(machine_state_list[0:3]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
             for index_2, machine in enumerate(machine_type_classlist):   # machine_type_classlist:[class1_1,class1_2,..]
-                if not (machine.lock_list): # 如果目标没被别人选了, 其实1,2,3就算被人锁了也可以去买，生产太快了，但是可能撞
+
+                # 如果目标没被别人选了, 其实1,2,3就算被人锁了也可以去买，生产太快了，但是可能撞,所以先上个锁判断
+                if not (machine.lock_list): 
                     
                     D_mid = (5000 - (machine.x-robot_i.x)**2 - (machine.y-robot_i.y)**2) * self.type123_need_num[machine.type]/(self.type123_num_count) #* 1/self.machine_num_of_type[machine.type]  # factor要考虑现在场上还需要多少1,2,3；优先去拿需要的多的，先把4,5,6填满再说
                     # sys.stderr.write(str(self.type123_need_num)+'\n')
@@ -160,31 +193,41 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         # sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n')
         self.min_D_machine_id = min_D_machine_id
 
-    def pickBuyerMachine(self, machine_dict, robot_i): # 就是这里容易出问题**********************
+    # 就是这里(找买家的时候)容易出问题**********************
+    def pickBuyerMachine(self, machine_dict, robot_i): 
         # sys.stderr.write('in pick Buyer \n')
-        if robot_i.take_obj in (1,2,3):  # 如果拿的是1.2.3:
+
+         # 如果拿的是1.2.3:
+        if robot_i.take_obj in (1,2,3):  
             if robot_i.take_obj == 1:
-                self.selectMinDMachineId_456(robot_i, machine_dict[3:5])
-                self.type123_need_num[1] -= 1
+                self.selectMinDMachineId_456(robot_i, machine_dict[3:5]) # 找买家
+                self.type123_need_num[1] -= 1 # 场上共需的物料1的数量-1
             
             elif robot_i.take_obj == 2:
-                self.selectMinDMachineId_456(robot_i, [machine_dict[3],machine_dict[5]])
-                self.type123_need_num[2] -= 1
+                self.selectMinDMachineId_456(robot_i, [machine_dict[3],machine_dict[5]]) # 找买家
+                self.type123_need_num[2] -= 1 # 场上共需的物料2的数量-1
             else:
-                self.selectMinDMachineId_456(robot_i, machine_dict[4:6])
-                self.type123_need_num[3] -= 1
+                self.selectMinDMachineId_456(robot_i, machine_dict[4:6]) # 找买家
+                self.type123_need_num[3] -= 1 # 场上共需的物料13的数量-1
 
-        elif robot_i.take_obj in (4,5,6):    # 去找7；4,5,6只能去找7
+        # 去找7；4,5,6只能去找7
+        elif robot_i.take_obj in (4,5,6):    
             
             # sys.stderr.write(str(robot_i.id)+'in 4,5,6 ' + str(min_D_machine_id)+'\n')
             min_D_machine_id = -1
             D_min = 5000 
             D_mid = 5000
+
+            # 遍历所有7
             for index_1,machine in enumerate(machine_dict[6]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
                 # sys.stderr.write(str(machine.type)+'  ')
-                if machine.lock_list == []: # 如果目标没被别人选了
+
+                # 如果目标没被别的小车选了
+                if machine.lock_list == []: 
                     # sys.stderr.write('in if1  ')
-                    if machine.receive(robot_i.take_obj): # 目标这个原料格没满
+
+                    # 目标这个原料格没满
+                    if machine.receive(robot_i.take_obj): 
                         # sys.stderr.write('in if2  ')
                         D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) 
                         # sys.stderr.write(str(D_mid)+'\n')
@@ -195,38 +238,43 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
             # sys.stderr.write(str(robot_i.id)+' in 4,5,6 ' + str(min_D_machine_id)+'\n')
             self.min_D_machine_id = min_D_machine_id
 
-        
-        else: # 否则就是拿着7，得去找8
+        # 否则就是拿着7，得去找8
+        else: 
             
             min_D_machine_id = 0
             D_min = 2500 
             
             for index_1,machine in enumerate(machine_dict[7]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
-                if not (machine.lock_list): # 如果目标没被别人选了 
+        #    if not (machine.lock_list): # 如果目标没被别人选了，8可以不用，8是秒生产
                     
-                    D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) 
-                    
-                    if( (D_mid < D_min)): 
-                        min_D_machine_id = machine.id
-                        D_min = D_mid
+                D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) 
+                
+                if( (D_mid < D_min)): 
+                    min_D_machine_id = machine.id
+                    D_min = D_mid
                         
             self.min_D_machine_id = min_D_machine_id
     
-    def selectMinDMachineId_456(self, robot_i, machine_dict): # 根据最小D选4,5,6买家
+    # 根据最小D选4,5,6买家
+    def selectMinDMachineId_456(self, robot_i, machine_dict):
 
         min_D_machine_id = -1
         D_min = 5000 
+
+        #遍历所有买家
         for index_1,machine_type_classlist in enumerate(machine_dict): # machine_dict:[[class4_1..],[class5_1,..],[class6_1]]
             for index_2, machine in enumerate(machine_type_classlist):   # machine_type_classlist:[class4_1,class4_2,..]
                 # if(robot_i.id == 3):
                 #     sys.stderr.write('two for machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
                 #     if  machine.receive(robot_i.take_obj): sys.stderr.write('can receive\n')
                 #     if not (robot_i.take_obj in machine.lock_list): sys.stderr.write('not target\n')
+
+                # 目标这个原料格没满，并且这个格子没被别人锁住,判断加权距离是不是更近
                 if machine.receive(robot_i.take_obj) & (not (robot_i.take_obj in machine.lock_list)) : # 目标这个原料格没满，并且这个格子没被别人锁住
                     # if(robot_i.id ==3): sys.stderr.write('in ? machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
                     D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * (1/(self.type7_need_num[machine.type]+1) * self.factor2)  # 按照公式去找4,5,6 D = d * type7_need_type4_num * type_receive_is_empty
                     # sys.stderr.write('D_mid: '+str(D_mid)+'\n')
-                    if(D_mid < D_min): 
+                    if(D_mid < D_min): # 判断加权距离是不是更近
                         
                         min_D_machine_id = machine.id
                         # if(robot_i.id ==3): 
@@ -238,27 +286,57 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         self.min_D_machine_id = min_D_machine_id
 
     def buyInterupt(self, machine, robot_state_list, machine_index_to_type_list): # 找到小车去买4,5,6，并且不管他之前的目标是谁，都重新把目标设为4,5,6，如果没携带物品的话
-        sys.stderr.write('buyInterupt \n')
+        # sys.stderr.write('buyInterupt \n')
         min_D_robot = None
         D_min = 5000 
-        for robot_i in robot_state_list: # 遍历4个小车，找到有空去买这个产品的小车
-            if (robot_i.take_obj != 0) | (machine_index_to_type_list[robot_i.target[0]].type in (4,5,6)):  # 如果不是0，即已经携带了物品，并且已经选了一个要去买的类型为4,5,6的目标了 就不选这个小车  *********************这个地方没修改好
+
+        # 遍历4个小车，找到有空去买这个产品的小车
+        for robot_i in robot_state_list: 
+
+            # 如果不是0，即已经携带了物品，就不选这个小车  *********************这个地方没修改好
+            if (robot_i.take_obj != 0) :  # 如果不是0
                 continue
-            else: # 否则找最近的小车去买
-                D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * self.factor3  
 
-                if(D_mid < D_min): 
-                    min_D_robot = robot_i
-                    D_min = D_mid
+            else: 
+                # 这里代码写的不好，逻辑没问题但是代码复杂，太多ifelse
+                #如果小车有target，上一个if已经把找到买家的小车continue了，这个if找的全是要去买货的小车
+                if robot_i.target != []:  # 如果小车有target
+                    # sys.stderr.write(str(robot_i.id)+' here? ' + str(robot_i.target)+' type: '+str(machine_index_to_type_list[robot_i.target[0]])+'\n')
+                    # 如果小车已经找的卖家是4,5,6,7，那也不要用这个小车
+                    if machine_index_to_type_list[robot_i.target[0]].type in (4,5,6,7): # 如果target类型是4,5,6,7
+                        # sys.stderr.write('robot_id_target: '+str(robot_i.target)+' type: '+ str(machine_index_to_type_list[robot_i.target[0]])+'\n')
+                        continue  
 
+                    # 如果小车的卖家是1,2,3, 这小车可以用
+                    else: 
+                        D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * self.factor3  
+
+                        if(D_mid < D_min): 
+                            min_D_robot = robot_i
+                            D_min = D_mid
+
+                # 如果小车没携带物品，也就是说小车在找卖家，就调度一下去买4,5,6 存疑，会有空target的现象出现么，还没想明白，先加上这个else再说***
+                else:
+                    D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * self.factor3  
+
+                    if(D_mid < D_min): 
+                        min_D_robot = robot_i
+                        D_min = D_mid
+
+        # 确实有小车可以去办这事，首先是设定target，然后锁一下************************
         if min_D_robot != None:    # 确实有小车可以去办这事，首先是设定target，然后锁一下************************
-            sys.stderr.write(str(min_D_robot.id)+' to buy '+ str(machine.type)+' \n')
-            min_D_robot.target = [machine.id, 1 ,0] # 让这小车去买
+            sys.stderr.write(str(min_D_robot.id)+' to buy '+ str(machine.type)+' \n\n')
+            min_D_robot.target = [machine.id, 1 ,0] # 设定target,让这小车去买
+            machine.buyerLock()  # 上买锁
+
+            # 如果是去买4,5,6，那就买了就要去送给7，那么场上共需4 or 5 or 6的数量就要相应减一
             if machine.type != 7:
-                self.type7_need_num[machine.type] -= 1 # 如果是去买4,5,6，那就买了就要去送给7，那么场上共需4 or 5 or 6的数量就要相应减一
-                for i in self.machinetype_match_receive[machine.type]:
+                self.type7_need_num[machine.type] -= 1 
+                for i in self.machinetype_match_receive[machine.type]: 
                     self.type123_need_num[i] += 1
-            else: # 如果是去买7 *********************************这里还可能出问题，因为7开始生产的时候就应该+1了，而不是买了之后+1
+
+            # 如果是去买7 *********************************这里还可能出问题，因为7开始生产的时候就应该+1了，而不是买了之后+1，当工作台多的时候没问题，工作台少的时候问题就会暴露
+            else: 
                 self.type7_need_num[4] += 1
                 self.type7_need_num[5] += 1
                 self.type7_need_num[6] += 1

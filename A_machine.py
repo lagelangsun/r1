@@ -22,6 +22,7 @@ class Machine(object):
         self.product_lock = False # 产品格锁
         self.buy_status = 0 # 工作台已经预定购买的产品状态
         self.lock_list = []
+        self.buyer_lock = False
         # self.receive_list = MACHINE_RECEIVE_OBJECT_LIST
 
     def receive(self, product_id):
@@ -44,6 +45,12 @@ class Machine(object):
     def unlock(self, obj_id):
         self.lock_list.remove(obj_id)
 
+    def buyerLock(self):
+        self.buyer_lock = True
+
+    def buyerUnlock(self):
+        self.buyer_lock = False
+        
     def update(self, data_line):
         self.x = data_line[0] # 横坐标
         self.y = data_line[1] # 纵坐标
