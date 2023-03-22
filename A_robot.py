@@ -22,6 +22,7 @@ class Robot(object):
         self.x = loc_list[0] # 横坐标
         self.y = loc_list[1] # 纵坐标
         self.target = [] # 正在移动
+        self.target_type = 0
         self.behavior = '' # 行为：买/卖+目标工作台id+物品类型
 
 

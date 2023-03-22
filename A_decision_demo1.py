@@ -73,9 +73,9 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                     sys.stderr.write('i amm 456 \n ' + str(self.type7_need_num))
                     if self.type7_need_num[product_finish_class.type] != 0:  # 如果可接受该型号，即所有7的该型号的原料格不为空 != 0
                         sys.stderr.write('i need that \n')
-                        self.buyInterupt(product_finish_class, robot_state_list)  # 触发中断，找小车去办这事()
+                        self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()
                 else: # 如果是7，直接去买
-                    self.buyInterupt(product_finish_class, robot_state_list)  # 触发中断，找小车去办这事()
+                    self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()
 
                 
 
@@ -237,14 +237,14 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         # if (robot_i.id ==3): sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n\n')
         self.min_D_machine_id = min_D_machine_id
 
-    def buyInterupt(self, machine, robot_state_list):
+    def buyInterupt(self, machine, robot_state_list, machine_index_to_type_list): # 找到小车去买4,5,6，并且不管他之前的目标是谁，都重新把目标设为4,5,6，如果没携带物品的话
         sys.stderr.write('buyInterupt \n')
         min_D_robot = None
-        D_min = 2500 
+        D_min = 5000 
         for robot_i in robot_state_list: # 遍历4个小车，找到有空去买这个产品的小车
-            if robot_i.take_obj != 0:  # 如果不是0，即已经携带了物品，就不选这个小车
+            if (robot_i.take_obj != 0) | (machine_index_to_type_list[robot_i.target[0]].type in (4,5,6)):  # 如果不是0，即已经携带了物品，并且已经选了一个要去买的类型为4,5,6的目标了 就不选这个小车  *********************这个地方没修改好
                 continue
-            else:
+            else: # 否则找最近的小车去买
                 D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * self.factor3  
 
                 if(D_mid < D_min): 
@@ -252,7 +252,7 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                     D_min = D_mid
 
         if min_D_robot != None:    # 确实有小车可以去办这事，首先是设定target，然后锁一下************************
-            # sys.stderr.write(str(min_D_robot)+'\n')
+            sys.stderr.write(str(min_D_robot.id)+' to buy '+ str(machine.type)+' \n')
             min_D_robot.target = [machine.id, 1 ,0] # 让这小车去买
             if machine.type != 7:
                 self.type7_need_num[machine.type] -= 1 # 如果是去买4,5,6，那就买了就要去送给7，那么场上共需4 or 5 or 6的数量就要相应减一
