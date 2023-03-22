@@ -26,10 +26,13 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         self.robot_order = [0, 0, 0, 0, 0]
 
         # 1,2,3的数量，其实传进来所有type的数量，以备不时之需
-        self.machine_num_of_type = machine_num_of_type
+        self.machine_num_of_type = machine_num_of_type # {1:int,2:int,....}
 
         # 型号7所需的型号4,5,6总num
-        self.type7_need_num = {4:machine_num_of_type[7],5:machine_num_of_type[7],6:machine_num_of_type[7]}
+        self.type7_need_num = {4:machine_num_of_type[7],5:machine_num_of_type[7],6:machine_num_of_type[7]} 
+        self.type123_need_num ={1:machine_num_of_type[4]+machine_num_of_type[5],2:machine_num_of_type[4]+machine_num_of_type[6],3:machine_num_of_type[5]+machine_num_of_type[6]}
+        self.type123_num_count = self.type123_need_num[1] +  self.type123_need_num[2] +self.type123_need_num[3]
+        self.machinetype_match_receive = {4:[1,2], 5:[1,3], 6:[2,3]}
 
         self.control = Control()
 
@@ -64,12 +67,14 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
 
         if interupt_4567: # 如果不为空，interupt_4567是个实例化列表[classx,classy,....],经过决策部分就会给小车设了target了
                           # 会在进入for之前截胡，直接把target给设好
-            # sys.stderr.write(str(interupt_4567)+'\n')
-            for product_finish_class in interupt_4567:  # 遍历这个列表
+            sys.stderr.write(str(interupt_4567)+'\n')
+            for product_finish_class in interupt_4567:  # 遍历这个列表，列表里是一个个machine类
                 if product_finish_class.type in (4,5,6): # 如果是4,5,6
-                    if self.type7_need_num[product_finish_class.type]:  # 如果可接受该型号，即所有7的该型号的原料格不为空 != 0
+                    sys.stderr.write('i amm 456 \n ' + str(self.type7_need_num))
+                    if self.type7_need_num[product_finish_class.type] != 0:  # 如果可接受该型号，即所有7的该型号的原料格不为空 != 0
+                        sys.stderr.write('i need that \n')
                         self.buyInterupt(product_finish_class, robot_state_list)  # 触发中断，找小车去办这事()
-                else:
+                else: # 如果是7，直接去买
                     self.buyInterupt(product_finish_class, robot_state_list)  # 触发中断，找小车去办这事()
 
                 
@@ -136,20 +141,20 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         #                          , self.all_robot_order_dict  # 这个变量，传起来有点复杂，但是如果能将控制从Robot类中拆出来就会好很多。
         #                          )
             
-    def pickSellerMachine(self, machine_state_list, robot_i): #去找1,2,3买,# **********************可优化
+    def pickSellerMachine(self, machine_state_list, robot_i): #去找1,2,3买,# **********************可优化，这里目前也出问题了，最后会疯狂买一样的发现没有地方可卖，所以要优化，主要是优化factor
 
         # sys.stderr.write('pick seller \n')
         min_D_machine_id = -1
-        D_min = 2500 
+        D_max = 0 
         for index_1,machine_type_classlist in enumerate(machine_state_list[0:3]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
             for index_2, machine in enumerate(machine_type_classlist):   # machine_type_classlist:[class1_1,class1_2,..]
                 if not (machine.lock_list): # 如果目标没被别人选了, 其实1,2,3就算被人锁了也可以去买，生产太快了，但是可能撞
                     
-                    D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) #* 1/self.machine_num_of_type[machine.type]  #有需要改的地方，最后一个factor
-                    
-                    if( (D_mid < D_min)): 
+                    D_mid = (5000 - (machine.x-robot_i.x)**2 - (machine.y-robot_i.y)**2) * self.type123_need_num[machine.type]/(self.type123_num_count) #* 1/self.machine_num_of_type[machine.type]  # factor要考虑现在场上还需要多少1,2,3；优先去拿需要的多的，先把4,5,6填满再说
+                    # sys.stderr.write(str(self.type123_need_num)+'\n')
+                    if( (D_mid > D_max)): 
                         min_D_machine_id = machine.id
-                        D_min = D_mid
+                        D_max = D_mid
         # sys.stderr.write('pick seller '+str(min_D_machine_id)+'\n')
 
         # sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n')
@@ -160,19 +165,21 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         if robot_i.take_obj in (1,2,3):  # 如果拿的是1.2.3:
             if robot_i.take_obj == 1:
                 self.selectMinDMachineId_456(robot_i, machine_dict[3:5])
+                self.type123_need_num[1] -= 1
             
             elif robot_i.take_obj == 2:
                 self.selectMinDMachineId_456(robot_i, [machine_dict[3],machine_dict[5]])
-        
+                self.type123_need_num[2] -= 1
             else:
                 self.selectMinDMachineId_456(robot_i, machine_dict[4:6])
+                self.type123_need_num[3] -= 1
 
         elif robot_i.take_obj in (4,5,6):    # 去找7；4,5,6只能去找7
             
             # sys.stderr.write(str(robot_i.id)+'in 4,5,6 ' + str(min_D_machine_id)+'\n')
             min_D_machine_id = -1
-            D_min = 2500 
-            D_mid = 2500
+            D_min = 5000 
+            D_mid = 5000
             for index_1,machine in enumerate(machine_dict[6]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
                 # sys.stderr.write(str(machine.type)+'  ')
                 if machine.lock_list == []: # 如果目标没被别人选了
@@ -187,6 +194,7 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                         D_min = D_mid
             # sys.stderr.write(str(robot_i.id)+' in 4,5,6 ' + str(min_D_machine_id)+'\n')
             self.min_D_machine_id = min_D_machine_id
+
         
         else: # 否则就是拿着7，得去找8
             
@@ -230,7 +238,7 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
         self.min_D_machine_id = min_D_machine_id
 
     def buyInterupt(self, machine, robot_state_list):
-        # sys.stderr.write('buyInterupt \n')
+        sys.stderr.write('buyInterupt \n')
         min_D_robot = None
         D_min = 2500 
         for robot_i in robot_state_list: # 遍历4个小车，找到有空去买这个产品的小车
@@ -247,8 +255,10 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
             # sys.stderr.write(str(min_D_robot)+'\n')
             min_D_robot.target = [machine.id, 1 ,0] # 让这小车去买
             if machine.type != 7:
-                self.type7_need_num[machine.type] -= 1
-            else:
+                self.type7_need_num[machine.type] -= 1 # 如果是去买4,5,6，那就买了就要去送给7，那么场上共需4 or 5 or 6的数量就要相应减一
+                for i in self.machinetype_match_receive[machine.type]:
+                    self.type123_need_num[i] += 1
+            else: # 如果是去买7 *********************************这里还可能出问题，因为7开始生产的时候就应该+1了，而不是买了之后+1
                 self.type7_need_num[4] += 1
                 self.type7_need_num[5] += 1
                 self.type7_need_num[6] += 1

@@ -32,7 +32,7 @@ class IOProcess(object):
                                       5: [], 6: [], 7: [], 8: [], 9: []}
 
         self.machine_num_of_type = {}
-        self.interupt_4567 = []
+        self.interupt_4567 = []  # 是否有生产完毕的4,5,6,7；有的话优先调度小车去买4,5,6,7
 
         self.frame_id = 1  # 帧数
         self.current_money = 200000  # 钱
@@ -118,6 +118,7 @@ class IOProcess(object):
                     machine_type, index_row, data_line)
                 
             if machine_type in (4, 5, 6, 7):  # 如果是4,5,6,7型号的,判断是否生产完毕
+                # if data_line[]:    # *********************************************这里应该加个判断开始生产的标志位，为了方便减1
                 if data_line[5]: # 更新是否生产完毕list，list里面直接append进这个工作台对象去
                     self.infoUpdate4567Products(machine_type, index_row)
 

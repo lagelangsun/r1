@@ -16,3 +16,4 @@ def read_util_ok():         # 该函数用于读取输入直到得到一个OK
 if __name__ == '__main__':
     io_model = IOProcess()
     io_model.getInfoFromServer()
+    
