@@ -6,7 +6,7 @@
 ① 更新了小车类A_robor_demo1, 添加了target(type:list)属性
 ② 更新了A_descision_demo1, 为决策模块，负责进行决策(目前是同时进行控制)
 
-### 1.2 A_control_demo1.py: 将A_control_demo1.py维护进项目中
+### 1.2 A_control_demo1.py, A_decision_demo1_clear: 将A_control_demo1.py,维护进项目中,  A_decision_demo1_clear为删掉调试代码的版本
 
 ① 如果有时间的话，为后续决策和控制分离做准备，如果控制决策分离的话需要将控制函数从robot类中分离到控制模块中
 
