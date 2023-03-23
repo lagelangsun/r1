@@ -22,6 +22,7 @@ class Robot(object):
         self.x = loc_list[0] # 横坐标
         self.y = loc_list[1] # 纵坐标
         self.target = [] # 正在移动
+        self.target1 = None # 正在移动 TODO
         self.target_type = -1
         self.behavior = '' # 行为：买/卖+目标工作台id+物品类型
 
@@ -112,3 +113,107 @@ class Robot(object):
         self.orientation = data_line[7] # 朝向
         self.x = data_line[8] # 横坐标
         self.y = data_line[9] # 纵坐标
+
+
+    def find_most_valuable_machine(self, machine_state_dict):
+        # 没有携带物品时，寻找价值最大的工作台
+        # nearest_machine = None
+        # sys.stderr.write('jin lai le ma ')
+        # wait_flag = True # 如果原材料格都满了，等待
+        # sys.stderr.write('machine_raw_status is\n')
+        # if 7 in machine_state_dict.keys():
+        #     for machine in machine_state_dict[7]:
+        #         sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
+        #         if not machine.raw_full():
+        #             # 没有装满，继续
+                    
+        #             wait_flag = False
+        #             break
+        # if wait_flag == True:
+        #     for obj_id in range(4, 7):
+        #         for machine in machine_state_dict[obj_id]:
+        #             if not machine.raw_full():
+        #                 # 没有装满，继续
+        #                 wait_flag = False
+        #                 break
+                    
+        # if wait_flag == False:
+        machine_list = []
+        if 7 in machine_state_dict.keys():
+            for machine in machine_state_dict[7]:
+                sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
+                sys.stderr.write(str(machine.raw_full())+'\n')
+                if (int(machine.product_status) == 1) & ( not machine.product_lock):
+                    machine_list.append(machine)
+            # sys.stderr.write('jin lai le ma 11111')
+            if self.find_nearest_machine(machine_list) != None:
+                return self.find_nearest_machine(machine_list)
+            
+        machine_list = []       
+        for obj_id in range(4, 7):
+            for machine in machine_state_dict[obj_id]:
+                # sys.stderr.write('machine_product_status is'+ str(machine.product_status)+'\n')
+                # sys.stderr.write('machine_product_lock is'+ str(machine.product_lock)+'\n')
+                sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
+                sys.stderr.write(str(machine.raw_full())+'\n')
+                if (int(machine.product_status) == 1) & ( not machine.product_lock):
+                    sys.stderr.write('***************************************************************\n')
+                    machine_list.append(machine)
+        if machine_list != []:
+            # sys.stderr.write('jin lai le ma 222222222222222222222222222222222222222222')
+            # for machine in machine_list:
+            #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
+            # sys.stderr.write('machine_list'+ str(machine_list)+'\n')
+            if self.find_nearest_machine(machine_list) != None:
+                return self.find_nearest_machine(machine_list)
+            
+        machine_list = []
+        for obj_id in range(1, 4):
+            for machine in machine_state_dict[obj_id]:
+                sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
+                sys.stderr.write(str(machine.raw_full())+'\n')
+                if int(machine.product_status) == 1:
+                    machine_list.append(machine)
+        if machine_list != []:
+            # sys.stderr.write('jin lai le ma 33333333333333333333333333333333333333333')
+            # for machine in machine_list:
+            #     sys.stderr.write('machine xxxxxxx' + str(machine.type))
+            
+            if self.find_nearest_machine(machine_list) != None:
+                return self.find_nearest_machine(machine_list)
+        return None
+    
+    def find_nearest_machine(self, machine_list):
+        # 在machine_list中寻找最近的machine
+        nearest_distance = 10000
+        nearest_machine = None
+        # sys.stderr.write('machine_list'+str(machine_list) + '\n')
+        # for machine in machine_list:
+        #     sys.stderr.write('machine_type '+ str(machine.type) + '\n')
+        if machine_list != []:
+            for machine in machine_list:
+                # sys.stderr.write('status_type'+str(machine.product_status) + '\n')
+                # if int(machine.product_status) == 1:
+                distance = self.calDistance(machine)
+                # sys.stderr.write('distance'+str(distance) + '\n')
+                # sys.stderr.write('nearest_machine'+str(nearest_distance) + '\n')
+                if distance < nearest_distance:
+                    nearest_machine = machine
+                    nearest_distance = distance
+                    # sys.stderr.write('nearest_machine'+str(nearest_machine) + '\n')
+        # if nearest_machine != None:                    
+        #     nearest_machine.product_status = 0
+        # sys.stderr.write('nearest_machine'+str(nearest_machine) + '\n')            
+        return nearest_machine
+    
+    def find_buyer(self, machine_sort_by_receive):
+        buyer_list = [] # 有空间购买该物品的工作台list
+        buyer = None
+        for machine in machine_sort_by_receive[self.take_obj]:
+            if machine.receive(self.take_obj) & (self.take_obj not in machine.lock_list):
+                # 如果该工作台可以购买该物品，加入进list
+                buyer_list.append(machine)
+
+            # 寻找上面的list中最近的工作台
+        buyer = self.find_nearest_machine(buyer_list)
+        return buyer

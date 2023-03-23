@@ -5,8 +5,8 @@ from A_machine import Machine
 from A_robot_demo1 import Robot
 from A_control_demo1 import Control
 from A_decision_mdoel1_demo2 import DecisionModel_1 #********************************
+from A_decision2 import DecisionModel_2 #********************************
 from copy import copy
-import time
 
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],
                            5: [7, 9], 6: [7, 9], 7: [8, 9]}
@@ -185,7 +185,6 @@ class IOProcess(object):
                             int(map_char), index_row, index_cal)  # 更新字典
 
         self.mapFinalUpdateDict()
-        self.mapUpdateDistance78()  #*************带9的话这里改成789就行了
         self.select_decision_model()
         self.server_info = []
 
@@ -239,11 +238,12 @@ class IOProcess(object):
         
         # 如果没有9，那就是只有7,8的情况，执行mode1
         if not (9 in all_type_kind): 
+            self.mapUpdateDistance78()
             self.decision = DecisionModel_1(self.machine_num_of_type)
             
         # 如果没有7,那肯定没有8，那肯定得有9,mode4
         elif not(7 in all_type_kind):
-            self.decision = DecisionModel_1(self.machine_num_of_type)
+            self.decision = DecisionModel_2()
         
         # 不是mode4,那就只能是mode3
         elif not(8 in all_type_kind):

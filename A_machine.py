@@ -75,3 +75,19 @@ class Machine(object):
     #     self.receive_list = self.update_receive_list(self.raw_status)
 
     # def update_receive_list(self, product_status):
+
+    def raw_full(self):
+        # 判断原材料格是否装满
+        if int(self.type) == 4:
+            if int(self.raw_status) == 6:
+                return True
+        elif int(self.type) == 5:
+            if int(self.raw_status) == 10:
+                return True
+        elif int(self.type) == 6:
+            if int(self.raw_status) == 12:
+                return True        
+        elif int(self.type) == 7:
+            if int(self.raw_status) == 112:
+                return True
+        return False
