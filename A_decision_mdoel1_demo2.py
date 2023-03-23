@@ -4,7 +4,6 @@ import math
 import time
 from copy import copy
 
-from A_property import Property
 from A_pre_calculate import CalculateFunc
 from A_machine import Machine
 from A_robot import Robot
@@ -96,7 +95,7 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
 
                             # 如果场上有可接受该型号(4,5,6)物料的工作台(目前只考虑了7，没考虑9)
                             if self.type7_need_num[product_finish_class.type] != 0:  #所有7的该型号的原料格不为空 != 0
-                                sys.stderr.write('i need that: '+ str(self.type7_need_num)+'\n')
+                                # sys.stderr.write('i need that: '+ str(self.type7_need_num)+'\n')
                                 self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list, frame_id)  # 触发中断，找小车去办这事()+
                                 
                                 
@@ -109,7 +108,7 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
                     for i in self.machinetype_match_receive[type_num]: 
                             self.type123_need_num[i] += 1
                 else:  # 对于型号4,5,6 
-                    sys.stderr.write('7 start produce \n')
+                    # sys.stderr.write('7 start produce \n')
                     self.type7_need_num[4] += 1
                     self.type7_need_num[5] += 1
                     self.type7_need_num[6] += 1
@@ -371,23 +370,13 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
         if machine.type != 7: #先暂时不考虑4,5,6了，可能出bug
             return False
         else:
-            need_frame_estimation =  (math.sqrt(machine.min_distance_78)  + math.sqrt((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) ) / 5 / 50  # 设置平均速度5吧，剩余帧数就是距离/5/50 ，除50是转换成帧
-            if need_frame_estimation <= (9000 - frame_id): # 如果所需帧数比剩余帧数小了, 就不去买了
+            # need_frame_estimation =  (math.sqrt(machine.min_distance_78)  + math.sqrt((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) ) / 5 / 50  # 设置平均速度5吧，剩余帧数就是距离/5/50 ，除50是转换成帧
+            # if need_frame_estimation >= (9000 - frame_id): # 如果所需帧数比剩余帧数大了, 那就是时间不够用了，就不去买了
+            #     sys.stderr.write('need_frame_estimation: ' + str(need_frame_estimation) + 'frame_remain: ' + str(9000 - frame_id)+'\n')
+            if 9000 - frame_id <= 500: #如果剩余时间太短就不去拿了，不知道如何计算剩余时间，就先设个常数吧。
                 return True
             else:
                 return False
             
 
             # sys.stderr.write(str(min_D_robot.take_obj)+ '  ' +str(min_D_robot.target)+ '\n')
-            
-            
-
-
-            
-                    
-                
-
-        
-
-
-
