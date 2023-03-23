@@ -4,7 +4,7 @@ from A_pre_calculate import CalculateFunc
 from A_machine import Machine
 from A_robot_demo1 import Robot
 from A_control_demo1 import Control
-from A_decision_mdoel1_demo2 import DecisionModel_1 #********************************
+from A_decision_model1_demo2 import DecisionModel_1 #********************************
 from A_decision2 import DecisionModel_2 #********************************
 from copy import copy
 

@@ -1,13 +1,5 @@
-import sys
 import numpy as np
-import math
-import time
 from copy import copy
-
-from A_pre_calculate import CalculateFunc
-from A_machine import Machine
-from A_robot import Robot
-from A_control_demo1 import Control
 
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],  
                            5: [7, 9], 6: [7, 9], 7: [8, 9]}

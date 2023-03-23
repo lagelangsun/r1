@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 import copy
 
 MACHINE_RECEIVE_OBJECT_LIST = {4: [1, 2], 5: [1, 3], 6: [2, 3], 7: [4, 5, 6], 8: [7], 9:[1, 2, 3, 4, 5, 6, 7]}
