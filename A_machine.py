@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import copy
 
 MACHINE_RECEIVE_OBJECT_LIST = {4: [1, 2], 5: [1, 3], 6: [2, 3], 7: [4, 5, 6], 8: [7], 9:[1, 2, 3, 4, 5, 6, 7]}
 
@@ -19,10 +20,21 @@ class Machine(object):
         self.remain_frame = 0    # 剩余生产时间
         self.raw_status = 0         # 原材料格状态
         self.product_status = 0 # 产品格状态
+        
         self.product_lock = False # 产品格锁
         self.buy_status = 0 # 工作台已经预定购买的产品状态
+        
+        
         self.lock_list = []
         self.buyer_lock = False
+        
+        # 有关剩余生产时间的优化
+        self.last_remain_frame = -1
+        self.manufacture_start = False
+        
+        # 有关最后一段时间决定是不是还要买的优化,现在还只考虑了7，因为7实在太贵了
+        self.min_distance_78 = 5000
+
         # self.receive_list = MACHINE_RECEIVE_OBJECT_LIST
 
     def receive(self, product_id):
@@ -52,6 +64,9 @@ class Machine(object):
         self.buyer_lock = False
         
     def update(self, data_line):
+        
+        
+        self.last_remain_frame = copy.deepcopy(self.remain_frame) # 在更新这一帧的剩余生产时间之前，先把当前剩余时间赋给上一帧标志,这个deepcopy不管用啊
         self.x = data_line[0] # 横坐标
         self.y = data_line[1] # 纵坐标
         self.remain_frame = data_line[2]    # 剩余生产时间

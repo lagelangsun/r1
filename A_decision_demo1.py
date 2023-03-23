@@ -43,6 +43,7 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                  , machine_sort_by_receive # 按照可以接受的物料类型分类，是个dict
                  , machine_index_to_type_list # 按照工作台id顺序 ，是个list
                  , interupt_4567
+                 , interupt_4567_start
                  ): # 是个dict
         
         # self.buySellMove()
@@ -88,7 +89,20 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
                         # 如果场上有可接受该型号(4,5,6)物料的工作台(目前只考虑了7，没考虑9)
                         if self.type7_need_num[product_finish_class.type] != 0:  #所有7的该型号的原料格不为空 != 0
                             # sys.stderr.write('i need that \n')
-                            self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()
+                            self.buyInterupt(product_finish_class, robot_state_list, machine_index_to_type_list)  # 触发中断，找小车去办这事()+
+                            
+        # 如果有开始生产的4,5,6,7型号，就对应的全场所需的1,2,3(4,5,6) or 4,5,6(7)增加
+        if interupt_4567_start:
+            for type_num in  interupt_4567_start:
+                if type_num != 7:  # 对于型号4,5,6 
+                    for i in self.machinetype_match_receive[type_num]: 
+                        self.type123_need_num[i] += 1
+                        
+                # 对于型号7开始生产
+                else: 
+                    self.type7_need_num[4] += 1
+                    self.type7_need_num[5] += 1
+                    self.type7_need_num[6] += 1
 
                 
 
@@ -332,14 +346,6 @@ class Decision(object): #decision demo1:只针对没有9的情况(只有78)
             # 如果是去买4,5,6，那就买了就要去送给7，那么场上共需4 or 5 or 6的数量就要相应减一
             if machine.type != 7:
                 self.type7_need_num[machine.type] -= 1 
-                for i in self.machinetype_match_receive[machine.type]: 
-                    self.type123_need_num[i] += 1
-
-            # 如果是去买7 *********************************这里还可能出问题，因为7开始生产的时候就应该+1了，而不是买了之后+1，当工作台多的时候没问题，工作台少的时候问题就会暴露
-            else: 
-                self.type7_need_num[4] += 1
-                self.type7_need_num[5] += 1
-                self.type7_need_num[6] += 1
 
             # sys.stderr.write(str(min_D_robot.take_obj)+ '  ' +str(min_D_robot.target)+ '\n')
 

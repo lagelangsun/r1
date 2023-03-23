@@ -5,7 +5,7 @@ from A_pre_calculate import CalculateFunc
 from A_machine import Machine
 from A_robot_demo1 import Robot
 from A_control_demo1 import Control
-from A_decision_demo1 import Decision
+from A_decision_mdoel1_demo2 import Decision #********************************
 import time
 
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],
@@ -31,9 +31,13 @@ class IOProcess(object):
         self.machine_state_dict_id = {1: [], 2: [], 3: [], 4: [],   # 各类型工作台包含的id
                                       5: [], 6: [], 7: [], 8: [], 9: []}
 
-        self.machine_num_of_type = {}
+        self.machine_num_of_type = {} # 各类型工作台的数量
         self.interupt_4567 = []  # 是否有生产完毕的4,5,6,7；有的话优先调度小车去买4,5,6,7
+        self.interupt_4567_start = [] # 是否有开始生产的4,5,6,7
 
+        self.decesion_mode_select = 0 # mdoe1:只有7,8 mode2:7,8,9 mode3:7,9 mode4:9
+        
+        
         self.frame_id = 1  # 帧数
         self.current_money = 200000  # 钱
         self.k = 0  # 机器数量
@@ -67,9 +71,10 @@ class IOProcess(object):
                                            , self.machine_sort_by_receive
                                            , self.machine_index_to_type_list
                                            , self.interupt_4567
+                                           , self.interupt_4567_start
                                            )  # 需要小车信息，需要工位信息 demo1:只考虑没有9的情况
 
-                    self.clear4567Products() # 用完就擦除
+                    self.clear4567() # 用完就擦除
                     self.finish()
 
                 else:
@@ -111,16 +116,22 @@ class IOProcess(object):
 
             machine_type = data_line[0]  # 型号
 
-            self.infoUpdateMachineStateDict(machine_type, index_row, data_line)
+            self.infoUpdateMachineStateDict(machine_type, index_row, data_line) # 应该是更新一次就行了
 
-            if(machine_type >= 4):  # 更新按接收分类的字典，我有个问题，是不是更新一次就行了，因为是取地址，所以这个根本不用更新，一次更新就全体更新了******************
-                self.infoUpdateMachineSortByRecive(
-                    machine_type, index_row, data_line)
+            # if(machine_type >= 4):  # 更新按接收分类的字典，我有个问题，是不是更新一次就行了，因为是取地址，所以这个根本不用更新，一次更新就全体更新了******************
+            #     self.infoUpdateMachineSortByRecive(
+            #         machine_type, index_row, data_line)
                 
-            if machine_type in (4, 5, 6, 7):  # 如果是4,5,6,7型号的,判断是否生产完毕
+            if machine_type in (4, 5, 6, 7):  # 如果是4,5,6,7型号的, 判断是否生产完毕, 还要判断是否开始生产
                 # if data_line[]:    # *********************************************这里应该加个判断开始生产的标志位，为了方便减1
-                if data_line[5]: # 更新是否生产完毕list，list里面直接append进这个工作台对象去
-                    self.infoUpdate4567Products(machine_type, index_row)
+                if data_line[5]: # 更新是否生产完毕list，list里面直接append进这个工作台对象去，生产完毕后把下面的开始生产标志位置False
+                    self.infoUpdate4567Products(index_row)
+                # if (machine_type == 7): sys.stderr.write(str(self.machine_index_to_type_list[index_row].remain_frame)+'   last:'+str(self.machine_index_to_type_list[index_row].remain_frame)+'\n')
+                if (self.machine_index_to_type_list[index_row].remain_frame - self.machine_index_to_type_list[index_row].last_remain_frame > 0): #  只有从-1跳到1500的时候才会大于0，其他时候一定是<(剩余帧数是递减的)=(产品没被取走)0的 
+                    # sys.stderr.write(" >0 ? \n")
+                    self.infoUpdate4567Start(machine_type)  
+                    
+                
 
     # 更新machine_state_dict
     def infoUpdateMachineStateDict(self, machine_type, index_row, data_line):
@@ -143,14 +154,19 @@ class IOProcess(object):
                 if(receive_sort_class.id == index_row):
                     receive_sort_class.update(data_line[1:6])
 
-    def infoUpdate4567Products(self, machine_type, index_row):
+    def infoUpdate4567Products(self, index_row):
         self.interupt_4567.append(self.machine_index_to_type_list[index_row]
             )  # 把生产好了的工作台类加到list中.
 
-    def clear4567Products(self):  # 每次更新完后都应该清空这个，
+    def clear4567(self):  # 每次更新完后都应该清空这个，
         self.interupt_4567 = []
+        self.interupt_4567_start = []
         #其实更符合逻辑的方法是每一帧改变值而不是清空，但是这样的话在决策的时候还要遍历一遍这些找到值为1的，所以相当于遍历了两边，符合逻辑但是时间复杂度高
 
+    def infoUpdate4567Start(self, machine_type):
+        self.interupt_4567_start.append(machine_type
+            )  # 有 machine_type 型号的工作台开始生产了，不用管是哪个工作台，知道是这个型号开始生产了就行了
+        
     # *****更新机器人参数******
 
     def infoUpdateRobotList(self, server_info_robot):

@@ -5,3 +5,52 @@
     ② 快结束的时候(判断帧数)，应该进行决策，如果在截止时间前买了货卖不出去，那就放弃购买，原地等待
     ③ 优先把已经生产好的贵重货物卖出去(判断时间足够买来卖出)，按优先级是7,(4,5,6),(1,2,3)，否则会损失较多。
     ④ 第③点不能从是否进行生产决策，不管怎么样，生产都是赚的，所以不考虑是否根据快要截止来判断是否生产，只考虑是否购买已经生产完毕的货物。
+
+解决问题1：
+如何判断什么时候开始生产？ 应该在machine类里面设置一个标志位，标志着开始进行生产，
+
+2.python赋值问题，好像是地址传递
+
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: 999.0 self.last_remain_frame:-1.0
+999.0   last:999.0
+ >0 ?
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+7 start produce
+self.remain_frame: 999.0 self.last_remain_frame:999.0    after update: self.remain_frame: 998.0 self.last_remain_frame:999.0
+998.0   last:998.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+i need that: {4: 1, 5: 1, 6: 1}
+2 to buy 4
+
+i need that: {4: 0, 5: 1, 6: 1}
+i need that: {4: 0, 5: 1, 6: 1}
+self.remain_frame: 998.0 self.last_remain_frame:998.0    after update: self.remain_frame: 997.0 self.last_remain_frame:998.0
+997.0   last:997.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+i need that: {4: 0, 5: 1, 6: 1}
+i need that: {4: 0, 5: 1, 6: 1}
+self.remain_frame: 997.0 self.last_remain_frame:997.0    after update: self.remain_frame: 996.0 self.last_remain_frame:997.0
+996.0   last:996.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0
+i need that: {4: 0, 5: 1, 6: 1}
+i need that: {4: 0, 5: 1, 6: 1}
+self.remain_frame: 996.0 self.last_remain_frame:996.0    after update: self.remain_frame: 995.0 self.last_remain_frame:996.0
+995.0   last:995.0
+self.remain_frame: -1.0 self.last_remain_frame:-1.0    after update: self.remain_frame: -1.0 self.last_remain_frame:-1.0
+-1.0   last:-1.0qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
