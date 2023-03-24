@@ -1,5 +1,6 @@
 import numpy as np
 from copy import copy
+import sys
 
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],  
                            5: [7, 9], 6: [7, 9], 7: [8, 9]}
@@ -161,51 +162,58 @@ class DecisionModel_2(object): #decision demo1:只针对没有9的情况(只有7
                     # receive_machine_list = RECEIVE_MACHINE_ID_LIST[take_obj]
                     # if at_machine_type in receive_machine_list:
                     # 如果机器人位于能够卖出的工作台附近，判断能否工作台能否购买
-                    if at_machine_type != -1:
-                        if at_machine.receive(take_obj):
-                            # 如果工作台可以购买，立即卖出
-                            # # sys.stderr.write('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\n')
-                            robot.sell()
+                    if robot.target1 != None:
+                        if at_machine_type != -1:
+                            if int(at_machine.type) == int(robot.target1.type):
+                                robot.sell()
                             if take_obj in at_machine.lock_list:
                                 at_machine.unlock(take_obj)
                             robot.target1 = None
                         else:
-                            # 如果机器人所处工作台不能够购买该物品
-                            # if robot.target1 != None:
-                            #     robot.move(robot.target1)
-                            # else:
-                            # 如果机器人没有目标，寻找一个最近的
-                            # # sys.stderr.write('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\n')
-                            buyer = robot.find_buyer(machine_sort_by_receive)
-                            if buyer != None:
-                                robot.move(buyer)
-                                robot.target1 = buyer
-                                if take_obj in [4, 5, 6, 7]:
-                                    buyer.lock(take_obj)
-                                # sys.stderr.write('buyer is to'+ str(robot.target1.type) + '\n')
-                                # sys.stderr.write('buyer_id is to: '+str(robot.target1.id) + '\n')
-                            # else:
-                            #     if take_obj in [1, 2, 3]:
-                            #         robot.destroy()
-                                # robot.unlock()
-                    else:
-                        # 如果机器人不在任何工作台，寻找最近的
-                        if robot.target1 != None:
                             robot.move(robot.target1)
-                        else:
-                            # 如果机器人没有目标，寻找一个最近的
-                            # # sys.stderr.write('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\n')
-                            buyer = robot.find_buyer(machine_sort_by_receive)
+                    else:
+                        buyer = robot.find_buyer(machine_sort_by_receive)
+                        if buyer != None:
+                            robot.move(buyer)
+                            robot.target1 = buyer
+                            if take_obj in [4, 5, 6, 7]:
+                                buyer.lock(take_obj)
+
+                    # -------------------------------------------------
+                    # if at_machine_type != -1:
+                    #     # if at_machine.receive(take_obj):
+                    #     #     # 如果工作台可以购买，立即卖出
+                    #     #     robot.sell()
+                    #     #     if take_obj in at_machine.lock_list:
+                    #     #         at_machine.unlock(take_obj)
+                    #     #     robot.target1 = None
+                    #     # else:
+                    #     #     # 如果机器人所处工作台不能够购买该物品
+                    #     #     buyer = robot.find_buyer(machine_sort_by_receive)
+                    #     #     if buyer != None:
+                    #     #         robot.move(buyer)
+                    #     #         robot.target1 = buyer
+                    #     #         if take_obj in [4, 5, 6, 7]:
+                    #     #             buyer.lock(take_obj)
+                    #     if int(at_machine.type) == int(robot.target1.type):
                             
-                            if buyer != None:
-                                # behavior = 'sell' + str(buyer.id) + str(take_obj)
-                                # if behavior 
-                                robot.move(buyer)
-                                robot.target1 = buyer
-                                if take_obj in [4, 5, 6, 7]:
-                                    buyer.lock(take_obj)
-                                # buyer.buy_status = buyer.buy_status + pow(2, int(take_obj))
-                                # sys.stderr.write('buyer is to'+ str(robot.target1.type) + '\n')
-                                # sys.stderr.write('buyer_id is to: '+str(robot.target1.id) + '\n')
+                    #         robot.sell()
+                    #         if take_obj in at_machine.lock_list:
+                    #             at_machine.unlock(take_obj)
+                    #         robot.target1 = None
+                    #     else:
+                    #         robot.move(robot.target1)
+                    # else:
+                    #     # 如果机器人不在任何工作台，寻找最近的
+                    #     if robot.target1 != None:
+                    #         robot.move(robot.target1)
+                    #     else:
+                    #         # 如果机器人没有目标，寻找一个最近的
+                    #         buyer = robot.find_buyer(machine_sort_by_receive)
+                    #         if buyer != None:
+                    #             robot.move(buyer)
+                    #             robot.target1 = buyer
+                    #             if take_obj in [4, 5, 6, 7]:
+                    #                 buyer.lock(take_obj)
 
         

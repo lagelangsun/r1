@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import sys
 
 MACHINE_RECEIVE_OBJECT_LIST = {4: [1, 2], 5: [1, 3], 6: [2, 3], 7: [4, 5, 6], 8: [7], 9:[1, 2, 3, 4, 5, 6, 7]}
 
@@ -42,11 +43,20 @@ class Machine(object):
         # if int(self.type) == 6:
         #     sys.stderr.write('machine_id is'+str(self.id)+'\n')
         #     sys.stderr.write('raw_status is'+str(self.raw_status)+'\n')
-        #     sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
-        if int(bin(int(self.raw_status)>>int(product_id))[-1]) == int(1):
-            return False # 不可接受
+        if int(self.type) in [1, 2, 3]:
+            return False
         else:
-            return True
+            if (int(self.type) in [4, 5, 6]) & (product_id in [4, 5, 6]):
+                return False
+            else:
+                sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
+                if int(bin(int(self.raw_status)>>int(product_id))[-1]) == int(1): 
+                    # sys.stderr.write('3333333333333333\n')
+                    return False # 不可接受
+                else:
+                    return True
+        
+            
     
     def lock(self, obj_id):
         if int(self.type) not in [8, 9]:

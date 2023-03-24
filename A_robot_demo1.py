@@ -70,13 +70,13 @@ class Robot(object):
                     rotate_angle = np.pi
                 else:
                     rotate_angle = - np.pi
-            speed = 3
+            speed = 6
             self.forward(speed)
         else:
             if (distance > 1):
                 speed = 6
             else:
-                speed = 1
+                speed = 3
             self.forward(speed)
 
         self.rotate(rotate_angle)
@@ -154,10 +154,10 @@ class Robot(object):
             for machine in machine_state_dict[obj_id]:
                 # sys.stderr.write('machine_product_status is'+ str(machine.product_status)+'\n')
                 # sys.stderr.write('machine_product_lock is'+ str(machine.product_lock)+'\n')
-                sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
-                sys.stderr.write(str(machine.raw_full())+'\n')
+                # sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
+                # sys.stderr.write(str(machine.raw_full())+'\n')
                 if (int(machine.product_status) == 1) & ( not machine.product_lock):
-                    sys.stderr.write('***************************************************************\n')
+                    # sys.stderr.write('***************************************************************\n')
                     machine_list.append(machine)
         if machine_list != []:
             # sys.stderr.write('jin lai le ma 222222222222222222222222222222222222222222')
@@ -170,8 +170,8 @@ class Robot(object):
         machine_list = []
         for obj_id in range(1, 4):
             for machine in machine_state_dict[obj_id]:
-                sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
-                sys.stderr.write(str(machine.raw_full())+'\n')
+                # sys.stderr.write('machine_raw_status is'+ str(machine.raw_status)+'\n')
+                # sys.stderr.write(str(machine.raw_full())+'\n')
                 if int(machine.product_status) == 1:
                     machine_list.append(machine)
         if machine_list != []:
@@ -212,6 +212,8 @@ class Robot(object):
         for machine in machine_sort_by_receive[self.take_obj]:
             if machine.receive(self.take_obj) & (self.take_obj not in machine.lock_list):
                 # 如果该工作台可以购买该物品，加入进list
+                if (self.take_obj in [1, 2, 3]) & (int(machine.type) == 9):
+                    continue
                 buyer_list.append(machine)
 
             # 寻找上面的list中最近的工作台
