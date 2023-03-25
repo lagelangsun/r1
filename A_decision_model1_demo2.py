@@ -57,6 +57,7 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
         
         # self.buySellMove()
         # self.choosen_machine = self.chooseMinDMachine123(machine_state_dict)
+        sys.stderr.write('\n'+str(frame_id)+'****************************\n')
 
         # 逻辑应该是：
         # 1. 初始的时候小车move最近的1,2,3 (move) 没必要，因为初始的时候need_factor 和 empty_factor都是一样的
@@ -240,14 +241,14 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
          # 如果拿的是1.2.3:
         if robot_i.take_obj in (1,2,3):  
             if robot_i.take_obj == 1:
-                self.selectMinDMachineId_456(robot_i, machine_state_list[3:5], machine_index_to_type_list) # 找买家
+                self.selectMinDMachineId_456(robot_i, machine_state_list[3:5], machine_index_to_type_list, machine_state_list) # 找买家
                 self.type123_need_num[1] -= 1 # 场上共需的物料1的数量-1
             
             elif robot_i.take_obj == 2:
-                self.selectMinDMachineId_456(robot_i, [machine_state_list[3],machine_state_list[5]], machine_index_to_type_list) # 找买家
+                self.selectMinDMachineId_456(robot_i, [machine_state_list[3],machine_state_list[5]], machine_index_to_type_list,machine_state_list) # 找买家
                 self.type123_need_num[2] -= 1 # 场上共需的物料2的数量-1
             else:
-                self.selectMinDMachineId_456(robot_i, machine_state_list[4:6], machine_index_to_type_list) # 找买家
+                self.selectMinDMachineId_456(robot_i, machine_state_list[4:6], machine_index_to_type_list,machine_state_list) # 找买家
                 self.type123_need_num[3] -= 1 # 场上共需的物料13的数量-1
 
         # 去找7；4,5,6只能去找7
@@ -273,6 +274,7 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
                         self.min_D_machine_id = machine.id
                         sys.stderr.write('select: '+str(self.min_D_machine_id)+' type: '+str(machine.type)+'\n')
                         for_break = True
+                        machine_index_to_type_list[min_D_machine_id].raw_num += 1
                         break
                 # 目标这个原料格没满
    
@@ -308,22 +310,37 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
             self.min_D_machine_id = min_D_machine_id
     
     # 根据最小D选4,5,6买家
-    def selectMinDMachineId_456(self, robot_i, machine_dict, machine_index_to_type_list):
+    def selectMinDMachineId_456(self, robot_i, machine_dict, machine_index_to_type_list, machine_state_list):
 
         min_D_machine_id = -1
         D_min = 5000 
+        break_flag = False
+        go_type = 1
 
+        for i in (4,5,6):
+            if (machine_state_list[6][0].receive(i)) | (machine_state_list[6][-1].receive(i)):
+                go_type = i
+                break
+
+        sys.stderr.write('go_type: '+str(go_type-1)+'\n')
         #遍历所有买家
         for index_1,machine_type_classlist in enumerate(machine_dict): # machine_dict:[[class4_1..],[class5_1,..],[class6_1]]
-            for index_2, machine in enumerate(machine_type_classlist):   # machine_type_classlist:[class4_1,class4_2,..]
+            for index_2, machine in enumerate(machine_state_list[go_type-1]):   # machine_type_classlist:[class4_1,class4_2,..]
                 # if(robot_i.id == 3):
-                #     sys.stderr.write('two for machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
+                sys.stderr.write('two for machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
                 #     if  machine.receive(robot_i.take_obj): sys.stderr.write('can receive\n')
                 #     if not (robot_i.take_obj in machine.lock_list): sys.stderr.write('not target\n')
 
-                # 目标这个原料格没满，并且这个格子没被别人锁住,判断加权距离是不是更近
+                # # 目标这个原料格没满，并且这个格子没被别人锁住,判断加权距离是不是更近
                 if machine.receive(robot_i.take_obj) & (not (robot_i.take_obj in machine.lock_list)) : # 目标这个原料格没满，并且这个格子没被别人锁住
-                    # if(robot_i.id ==3): sys.stderr.write('in ? machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
+
+                #     if (machine_state_list[6][0].receive(machine.type)) | (machine_state_list[6][-1].receive(machine.type)):
+                #         machine_index_to_type_list[min_D_machine_id].raw_num += 1   # 这个456被设为目标了,那么就得加1
+                #         self.min_D_machine_id = machine.type
+                #         break_flag = True
+                #         break
+                #     # if(robot_i.id ==3): sys.stderr.write('in ? machine_id: '+str(machine.id)+' '+'machine_type '+str(machine.type)+'\n')
+                #     else:
                     D_mid = ((machine.x-robot_i.x)**2 + (machine.y-robot_i.y)**2) * (1/(self.type7_need_num[machine.type]+ self.factor_7_need_456num))  *  (1/(machine.raw_num + self.factor_456_raw_num))  # 按照公式去找4,5,6 D = d * type7_need_type4_num * type_receive_is_empty
                     # sys.stderr.write('D_mid: '+str(D_mid)+'\n')
                     if(D_mid < D_min): # 判断加权距离是不是更近
@@ -334,9 +351,11 @@ class DecisionModel_1(object): #decision demo1:只针对没有9的情况(只有7
                         #     sys.stderr.write('D_mid: '+str(D_mid)+'\n')
                         #     sys.stderr.write('min_D_machine_id: '+str(min_D_machine_id)+'\n')
                         D_min = copy(D_mid)
-        # if (robot_i.id ==3): sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n\n')
-        machine_index_to_type_list[min_D_machine_id].raw_num += 1   # 这个456被设为目标了,那么就得加1
-        self.min_D_machine_id = min_D_machine_id
+
+            # if (robot_i.id ==3): sys.stderr.write('robot '+str(robot_i.id)+' have '+str(robot_i.take_obj) +' to '+ str(min_D_machine_id)+' which is type \n\n')
+        if min_D_machine_id != -1:
+            machine_index_to_type_list[min_D_machine_id].raw_num += 1   # 这个456被设为目标了,那么就得加1
+            self.min_D_machine_id = min_D_machine_id
 
     def buyInterupt(self, machine, robot_state_list, machine_index_to_type_list, frame_id): # 找到小车去买4,5,6，并且不管他之前的目标是谁，都重新把目标设为4,5,6，如果没携带物品的话   *********** 但是有问题，如果场上现在不需要4,5,6，不能硬买
         # sys.stderr.write('buyInterupt \n')

@@ -70,7 +70,7 @@ class Robot(object):
                     rotate_angle = np.pi
                 else:
                     rotate_angle = - np.pi
-            speed = 6
+            speed = 3
             self.forward(speed)
         else:
             if (distance > 1):

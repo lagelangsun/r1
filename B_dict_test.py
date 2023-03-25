@@ -11,7 +11,8 @@ MyScore = {1: 10, 2: 20, 3: 20}  # 工作台按型号list
 
 maxScore_name = max(MyScore, key=MyScore.get)
 print(maxScore_name)
-
+A = [1,2,3,4,5]
+print(max(A))
 # print([machine_sort_by_receive[1],machine_sort_by_receive[2],machine_sort_by_receive[3]])
 # A = [1,2,3,4,5]
 # if not [value for key,value in machine_sort_by_receive.items()]:

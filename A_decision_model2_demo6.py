@@ -188,15 +188,15 @@ class DecisionModel_2(object): #decision demo1:只针对没有9的情况(只有7
         
         min_D_machine_id = -1
         D_max = 0 
-        type123_most_need = max(self.type123_need_num, key=self.type123_need_num.get) 
+        # type123_most_need = max(self.type123_need_num, key=self.type123_need_num.get) 
         # sys.stderr.write('most_need: '+str(type123_most_need)+'\n')
         # 遍历所有卖家
-        for index_1,machine in enumerate(machine_state_list[type123_most_need-1]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
-
-                D_mid = (5000 - (machine.x-robot_i.x)**2 - (machine.y-robot_i.y)**2) #* self.type123_need_num[machine.type]/(self.type123_num_count) #* 1/self.machine_num_of_type[machine.type]  # factor要考虑现在场上还需要多少1,2,3；优先去拿需要的多的，先把4,5,6填满再说
-                if( (D_mid > D_max)): 
-                    min_D_machine_id = machine.id
-                    D_max = copy(D_mid)
+        for index_1,machine in enumerate(machine_state_list[0:3]): # machine_dict:[[class1_1..],[class2_1,..],[class3_1]]
+                if (machine.x<25) & (machine.y<25):
+                    D_mid = (5000 - (machine.x-robot_i.x)**2 - (machine.y-robot_i.y)**2) #* self.type123_need_num[machine.type]/(self.type123_num_count) #* 1/self.machine_num_of_type[machine.type]  # factor要考虑现在场上还需要多少1,2,3；优先去拿需要的多的，先把4,5,6填满再说
+                    if( (D_mid > D_max)): 
+                        min_D_machine_id = machine.id
+                        D_max = copy(D_mid)
 
         # sys.stderr.write('pick seller '+str(min_D_machine_id)+'\n')
         # sys.stderr.write('robot id: '+str(robot_i.id)+'    pick seller id:'+str(min_D_machine_id)+' seller type: '+str(machine_index_to_type_list[min_D_machine_id].type) +'\n\n')
