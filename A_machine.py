@@ -34,6 +34,7 @@ class Machine(object):
         
         # 有关最后一段时间决定是不是还要买的优化,现在还只考虑了7，因为7实在太贵了
         self.min_distance_78 = 5000
+        self.raw_num = 0 # 工作台生产格存放的货物数量
 
         # self.receive_list = MACHINE_RECEIVE_OBJECT_LIST
 
@@ -49,22 +50,23 @@ class Machine(object):
             if (int(self.type) in [4, 5, 6]) & (product_id in [4, 5, 6]):
                 return False
             else:
-                sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
+                # sys.stderr.write(str(int(bin(int(self.raw_status)>>int(product_id))[-1])==int(1))+'\n')
                 if int(bin(int(self.raw_status)>>int(product_id))[-1]) == int(1): 
                     # sys.stderr.write('3333333333333333\n')
                     return False # 不可接受
                 else:
                     return True
-        
-            
     
     def lock(self, obj_id):
         if int(self.type) not in [8, 9]:
             self.lock_list.append(obj_id)
         # sys.stderr.write('lock_list'+str(self.lock_list)+'\n')
 
-    def unlock(self, obj_id):
-        self.lock_list.remove(obj_id)
+    # def target_lock(self,):
+
+
+    def unlock(self):
+        self.lock_list = []
 
     def buyerLock(self):
         self.buyer_lock = True

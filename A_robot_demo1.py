@@ -76,7 +76,7 @@ class Robot(object):
             if (distance > 1):
                 speed = 6
             else:
-                speed = 3
+                speed = 1
             self.forward(speed)
 
         self.rotate(rotate_angle)

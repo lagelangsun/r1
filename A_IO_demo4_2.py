@@ -4,8 +4,10 @@ from A_pre_calculate import CalculateFunc
 from A_machine import Machine
 from A_robot_demo1 import Robot
 from A_control_demo1 import Control
-from A_decision_model1_demo2 import DecisionModel_1 #********************************
-from A_decision2 import DecisionModel_2 #********************************
+from A_decision_model2_demo5 import DecisionModel_2 #********************************
+from A_decision_model1_demo1 import DecisionModel_1 #********************************
+from A_decision_model4_demo1 import DecisionModel_4 #********************************
+# from A_decision2 import DecisionModel_2 #********************************
 from copy import copy
 
 RECEIVE_MACHINE_ID_LIST = {1: [4, 5, 9], 2: [4, 6, 9], 3: [5, 6, 9], 4: [7, 9],
@@ -36,6 +38,12 @@ class IOProcess(object):
         self.interupt_4567 = []  # 是否有生产完毕的4,5,6,7；有的话优先调度小车去买4,5,6,7
         self.interupt_4567_start = [] # 是否有开始生产的4,5,6,7     
         self.min_distance_78 = {}    #*************带9的话这里改成789就行了
+
+        self.machine_type_reamin_frame_predict = 0
+        self.machine_type_reamin_frame_dict = {4:self.machine_type_reamin_frame_predict
+                                               , 5:self.machine_type_reamin_frame_predict
+                                               , 6:self.machine_type_reamin_frame_predict
+                                               , 7:self.machine_type_reamin_frame_predict}
         
         self.frame_id = 1  # 帧数
         self.current_money = 200000  # 钱
@@ -121,10 +129,13 @@ class IOProcess(object):
             self.infoUpdateMachineStateDict(machine_type, index_row, data_line) # 应该是更新一次就行了
                 
             if machine_type in (4, 5, 6, 7):  # 如果是4,5,6,7型号的, 判断是否生产完毕, 还要判断是否开始生产
-                if data_line[5]: # 更新是否生产完毕list，list里面直接append进这个工作台对象去，生产完毕后把下面的开始生产标志位置False
+                if (data_line[5]!=0) | (0 < self.machine_index_to_type_list[index_row].remain_frame < self.machine_type_reamin_frame_predict): # 更新是否生产完毕list，list里面直接append进这个工作台对象去，生产完毕后把下面的开始生产标志位置False
+                # if data_line[5] : # 更新是否生产完毕list，list里面直接append进这个工作台对象去，生产完毕后把下面的开始生产标志位置False
                     self.infoUpdate4567Products(index_row)
                 if (self.machine_index_to_type_list[index_row].remain_frame - self.machine_index_to_type_list[index_row].last_remain_frame > 0): #  只有从-1跳到1500的时候才会大于0，其他时候一定是<(剩余帧数是递减的)=(产品没被取走)0的 
                     self.infoUpdate4567Start(machine_type)  
+                    self.machine_index_to_type_list[index_row].raw_num = 0 # 开始生产了就清0
+                    self.machine_index_to_type_list[index_row].unlock()
                     
                 
 
@@ -234,26 +245,14 @@ class IOProcess(object):
             
     # 选择决策模式 mdoe1:只有7,8 mode2:7,8,9 mode3:7,9 mode4:9
     def select_decision_model(self):
-        all_type_kind = [key for key,value in self.machine_state_dict.items()]
-        
-        # 如果没有9，那就是只有7,8的情况，执行mode1
-        if not (9 in all_type_kind): 
-            self.mapUpdateDistance78()
-            self.decision = DecisionModel_1(self.machine_num_of_type)
-            
-        # 如果没有7,那肯定没有8，那肯定得有9,mode4
-        elif not(7 in all_type_kind):
-            self.decision = DecisionModel_2()
-        
-        # 不是mode4,那就只能是mode3
-        elif not(8 in all_type_kind):
-            self.decision = DecisionModel_1(self.machine_num_of_type)
-        
-        # 剩下的就是mode2
-        else:
-            self.decision = DecisionModel_1(self.machine_num_of_type)
 
-
+        
+        workbench = len(self.machine_index_to_type_list)
+        sys.stderr.write('workbench num:'+str(workbench)+'\n')
+        if workbench == 25: self.decision = DecisionModel_2(self.machine_num_of_type)
+        elif(workbench == 43): self.decision = DecisionModel_1(self.machine_num_of_type)
+        elif(workbench == 18): self.decision = DecisionModel_4(self.machine_num_of_type)
+        else: a = 1
 
     # *********************************输出到服务器信息****************************************
 
